@@ -1,2 +1,6 @@
 packages:
-  - 'packages/*'
+  - packages/*
+  - demo-vite
+
+overrides:
+  react: link:dist/node_modules/react
