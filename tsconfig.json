@@ -16,6 +16,9 @@
     "noUnusedParameters": true,
     "noImplicitReturns": false,
     "skipLibCheck": true,
-    "baseUrl": "./packages"
+    "baseUrl": "./packages",
+    "paths": {
+        "host-config": ["./react-reconciler/src/host-config.ts"]
+    }
   }
 }

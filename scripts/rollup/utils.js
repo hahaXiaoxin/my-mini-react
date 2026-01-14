@@ -4,6 +4,7 @@ import fs from 'fs';
 import cjs from '@rollup/plugin-commonjs';
 import ts from '@rollup/plugin-typescript';
 
+import replace from '@rollup/plugin-replace';
 const pkgPath = path.resolve(__dirname, '../../packages');
 const distPath = path.resolve(__dirname, '../../dist/node_modules');
 
@@ -36,9 +37,10 @@ export function getPackageJSON(pkgName) {
  * 获取基础插件
  * @param options 插件参数
  * @param options.typescriptOptions rollup-plugin-typescript 插件参数
+ * @param options.alias rollup-plugin-alias 插件参数
  * @returns
  */
-export function getBaseRollupPlugins(options){
-  const { typescriptOptions } = options || {};
-  return [cjs(), ts(typescriptOptions)];
+export function getBaseRollupPlugins(options) {
+  const { typescriptOptions, alias = { __DEV__: true } } = options || {};
+  return [replace(alias), cjs(), ts(typescriptOptions)];
 }

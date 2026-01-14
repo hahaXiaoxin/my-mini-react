@@ -11,6 +11,9 @@ importers:
 
   .:
     dependencies:
+      '@rollup/plugin-replace':
+        specifier: ^6.0.3
+        version: 6.0.3(rollup@4.55.1)
       react:
         specifier: link:dist/node_modules/react
         version: link:dist/node_modules/react
@@ -111,6 +114,12 @@ importers:
         version: rolldown-vite@7.2.5(@types/node@25.0.3)(jiti@2.6.1)
 
   packages/react:
+    dependencies:
+      shared:
+        specifier: workspace:*
+        version: link:../shared
+
+  packages/react-reconciler:
     dependencies:
       shared:
         specifier: workspace:*
@@ -467,6 +476,15 @@ packages:
     engines: {node: '>=16.0.0 || 14 >= 14.17'}
     peerDependencies:
       rollup: ^2.68.0||^3.0.0||^4.0.0
+    peerDependenciesMeta:
+      rollup:
+        optional: true
+
+  '@rollup/plugin-replace@6.0.3':
+    resolution: {integrity: sha512-J4RZarRvQAm5IF0/LwUUg+obsm+xZhYnbMXmXROyoSE1ATJe3oXSb9L5MMppdxP2ylNSjv6zFBwKYjcKMucVfA==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      rollup: ^1.20.0||^2.0.0||^3.0.0||^4.0.0
     peerDependenciesMeta:
       rollup:
         optional: true
@@ -2129,6 +2147,13 @@ snapshots:
       is-reference: 1.2.1
       magic-string: 0.30.21
       picomatch: 4.0.3
+    optionalDependencies:
+      rollup: 4.55.1
+
+  '@rollup/plugin-replace@6.0.3(rollup@4.55.1)':
+    dependencies:
+      '@rollup/pluginutils': 5.3.0(rollup@4.55.1)
+      magic-string: 0.30.21
     optionalDependencies:
       rollup: 4.55.1
 
