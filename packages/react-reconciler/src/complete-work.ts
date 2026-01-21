@@ -1,6 +1,6 @@
-import { appendInitialChild, createInstance, createTextInstance } from 'host-config';
+import { appendInitialChild, Container, createInstance, createTextInstance } from 'host-config';
 import { FiberNode } from './fiber';
-import { HostComponent, HostRoot, HostText } from './work-tags';
+import { FunctionComponent, HostComponent, HostRoot, HostText } from './work-tags';
 import { NoFlags } from './fiber-flags';
 
 // 递归中的“归”
@@ -36,6 +36,10 @@ export const completeWork = (wip: FiberNode) => {
       bubbleProperties(wip);
       break;
     case HostRoot:
+      bubbleProperties(wip);
+      break;
+    case FunctionComponent:
+      bubbleProperties(wip);
       break;
     default:
       if (__DEV__) {
@@ -46,7 +50,7 @@ export const completeWork = (wip: FiberNode) => {
 };
 
 /** 将对应的 DOM 树拼装出来 */
-function appendAllChildren(parent: FiberNode, wip: FiberNode) {
+function appendAllChildren(parent: Container, wip: FiberNode) {
   let node = wip.child;
 
   while (node !== null) {

@@ -6,17 +6,11 @@ settings:
 
 overrides:
   react: link:dist/node_modules/react
+  react-dom: link:dist/node_modules/react-dom
 
 importers:
 
   .:
-    dependencies:
-      '@rollup/plugin-replace':
-        specifier: ^6.0.3
-        version: 6.0.3(rollup@4.55.1)
-      react:
-        specifier: link:dist/node_modules/react
-        version: link:dist/node_modules/react
     devDependencies:
       '@commitlint/cli':
         specifier: ^20.3.0
@@ -27,15 +21,30 @@ importers:
       '@eslint/js':
         specifier: ^9.39.2
         version: 9.39.2
+      '@rollup/plugin-alias':
+        specifier: ^5.1.1
+        version: 5.1.1(rollup@4.55.1)
       '@rollup/plugin-commonjs':
         specifier: ^29.0.0
         version: 29.0.0(rollup@4.55.1)
+      '@rollup/plugin-replace':
+        specifier: ^6.0.3
+        version: 6.0.3(rollup@4.55.1)
       '@rollup/plugin-typescript':
         specifier: ^12.3.0
         version: 12.3.0(rollup@4.55.1)(tslib@2.8.1)(typescript@5.9.3)
       '@types/node':
         specifier: ^25.0.3
         version: 25.0.3
+      '@types/react':
+        specifier: ^19.2.5
+        version: 19.2.9
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.2.3(@types/react@19.2.9)
+      '@vitejs/plugin-react':
+        specifier: ^5.1.1
+        version: 5.1.2(rolldown-vite@7.2.5(@types/node@25.0.3)(jiti@2.6.1))
       commitlint:
         specifier: ^20.3.0
         version: 20.3.0(@types/node@25.0.3)(typescript@5.9.3)
@@ -48,6 +57,12 @@ importers:
       eslint-plugin-prettier:
         specifier: ^5.5.4
         version: 5.5.4(@types/eslint@9.6.1)(eslint-config-prettier@10.1.8(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1))(prettier@3.7.4)
+      eslint-plugin-react-hooks:
+        specifier: ^7.0.1
+        version: 7.0.1(eslint@9.39.2(jiti@2.6.1))
+      eslint-plugin-react-refresh:
+        specifier: ^0.4.26
+        version: 0.4.26(eslint@9.39.2(jiti@2.6.1))
       globals:
         specifier: ^17.0.0
         version: 17.0.0
@@ -69,52 +84,33 @@ importers:
       rollup-plugin-generate-package-json:
         specifier: ^3.2.0
         version: 3.2.0(rollup@4.55.1)
+      tslib:
+        specifier: ^2.8.1
+        version: 2.8.1
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
       typescript-eslint:
         specifier: ^8.52.0
         version: 8.52.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
-
-  demo-vite:
-    dependencies:
-      react:
-        specifier: link:../dist/node_modules/react
-        version: link:../dist/node_modules/react
-      react-dom:
-        specifier: ^19.2.0
-        version: 19.2.3(react@dist+node_modules+react)
-    devDependencies:
-      '@eslint/js':
-        specifier: ^9.39.1
-        version: 9.39.2
-      '@types/react':
-        specifier: ^19.2.5
-        version: 19.2.7
-      '@types/react-dom':
-        specifier: ^19.2.3
-        version: 19.2.3(@types/react@19.2.7)
-      '@vitejs/plugin-react':
-        specifier: ^5.1.1
-        version: 5.1.2(rolldown-vite@7.2.5(@types/node@25.0.3)(jiti@2.6.1))
-      eslint:
-        specifier: ^9.39.1
-        version: 9.39.2(jiti@2.6.1)
-      eslint-plugin-react-hooks:
-        specifier: ^7.0.1
-        version: 7.0.1(eslint@9.39.2(jiti@2.6.1))
-      eslint-plugin-react-refresh:
-        specifier: ^0.4.24
-        version: 0.4.26(eslint@9.39.2(jiti@2.6.1))
-      globals:
-        specifier: ^16.5.0
-        version: 16.5.0
       vite:
         specifier: npm:rolldown-vite@7.2.5
         version: rolldown-vite@7.2.5(@types/node@25.0.3)(jiti@2.6.1)
 
   packages/react:
     dependencies:
+      shared:
+        specifier: workspace:*
+        version: link:../shared
+
+  packages/react-dom:
+    dependencies:
+      react:
+        specifier: link:../../dist/node_modules/react
+        version: link:../../dist/node_modules/react
+      react-reconciler:
+        specifier: workspace:*
+        version: link:../react-reconciler
       shared:
         specifier: workspace:*
         version: link:../shared
@@ -471,6 +467,15 @@ packages:
   '@rolldown/pluginutils@1.0.0-beta.53':
     resolution: {integrity: sha512-vENRlFU4YbrwVqNDZ7fLvy+JR1CRkyr01jhSiDpE1u6py3OMzQfztQU2jxykW3ALNxO4kSlqIDeYyD0Y9RcQeQ==}
 
+  '@rollup/plugin-alias@5.1.1':
+    resolution: {integrity: sha512-PR9zDb+rOzkRb2VD+EuKB7UC41vU5DIwZ5qqCpk0KJudcWAyi8rvYOhS7+L5aZCspw1stTViLgN5v6FF1p5cgQ==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      rollup: ^1.20.0||^2.0.0||^3.0.0||^4.0.0
+    peerDependenciesMeta:
+      rollup:
+        optional: true
+
   '@rollup/plugin-commonjs@29.0.0':
     resolution: {integrity: sha512-U2YHaxR2cU/yAiwKJtJRhnyLk7cifnQw0zUpISsocBDoHDJn+HTV74ABqnwr5bEgWUwFZC9oFL6wLe21lHu5eQ==}
     engines: {node: '>=16.0.0 || 14 >= 14.17'}
@@ -674,8 +679,8 @@ packages:
     peerDependencies:
       '@types/react': ^19.2.0
 
-  '@types/react@19.2.7':
-    resolution: {integrity: sha512-MWtvHrGZLFttgeEj28VXHxpmwYbor/ATPYbBfSFZEIRK0ecCFLl2Qo55z52Hss+UV9CRN7trSeq1zbgx7YDWWg==}
+  '@types/react@19.2.9':
+    resolution: {integrity: sha512-Lpo8kgb/igvMIPeNV2rsYKTgaORYdO1XGVZ4Qz3akwOj0ySGYMPlQWa8BaLn0G63D1aSaAQ5ldR06wCpChQCjA==}
 
   '@typescript-eslint/eslint-plugin@8.52.0':
     resolution: {integrity: sha512-okqtOgqu2qmZJ5iN4TWlgfF171dZmx2FzdOv2K/ixL2LZWDStL8+JgQerI2sa8eAEfoydG9+0V96m7V+P8yE1Q==}
@@ -1079,10 +1084,6 @@ packages:
     resolution: {integrity: sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==}
     engines: {node: '>=18'}
 
-  globals@16.5.0:
-    resolution: {integrity: sha512-c/c15i26VrJ4IRt5Z89DnIzCGDn9EcebibhAOjw5ibqEHsE1wLUgkPn9RDmNcUKyU87GeaL633nyJ+pplFR2ZQ==}
-    engines: {node: '>=18'}
-
   globals@17.0.0:
     resolution: {integrity: sha512-gv5BeD2EssA793rlFWVPMMCqefTlpusw6/2TbAVMy0FzcG8wKJn4O+NqJ4+XWmmwrayJgw5TzrmWjFgmz1XPqw==}
     engines: {node: '>=18'}
@@ -1462,11 +1463,6 @@ packages:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
 
-  react-dom@19.2.3:
-    resolution: {integrity: sha512-yELu4WmLPw5Mr/lmeEpox5rw3RETacE++JgHqQzd2dg+YbJuat3jH4ingc+WPZhxaoFzdv9y33G+F7Nl5O0GBg==}
-    peerDependencies:
-      react: ^19.2.3
-
   react-refresh@0.18.0:
     resolution: {integrity: sha512-QgT5//D3jfjJb6Gsjxv0Slpj23ip+HtOpnNgnb2S5zU3CB26G/IDPGoy4RJB42wzFE46DRsstbW6tKHoKbhAxw==}
     engines: {node: '>=0.10.0'}
@@ -1556,9 +1552,6 @@ packages:
     resolution: {integrity: sha512-wDv/Ht1BNHB4upNbK74s9usvl7hObDnvVzknxqY/E/O3X6rW1U1rV1aENEfJ54eFZDTNo7zv1f5N4edCluH7+A==}
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
-
-  scheduler@0.27.0:
-    resolution: {integrity: sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==}
 
   semver@5.7.2:
     resolution: {integrity: sha512-cBznnQ9KjJqU67B52RMC65CMarK2600WFnbkcaiwWq3xy/5haFJlshgnpjovMVJ+Hff49d8GEn0b87C5pDQ10g==}
@@ -2138,6 +2131,10 @@ snapshots:
 
   '@rolldown/pluginutils@1.0.0-beta.53': {}
 
+  '@rollup/plugin-alias@5.1.1(rollup@4.55.1)':
+    optionalDependencies:
+      rollup: 4.55.1
+
   '@rollup/plugin-commonjs@29.0.0(rollup@4.55.1)':
     dependencies:
       '@rollup/pluginutils': 5.3.0(rollup@4.55.1)
@@ -2295,11 +2292,11 @@ snapshots:
 
   '@types/normalize-package-data@2.4.4': {}
 
-  '@types/react-dom@19.2.3(@types/react@19.2.7)':
+  '@types/react-dom@19.2.3(@types/react@19.2.9)':
     dependencies:
-      '@types/react': 19.2.7
+      '@types/react': 19.2.9
 
-  '@types/react@19.2.7':
+  '@types/react@19.2.9':
     dependencies:
       csstype: 3.2.3
 
@@ -2739,8 +2736,6 @@ snapshots:
 
   globals@14.0.0: {}
 
-  globals@16.5.0: {}
-
   globals@17.0.0: {}
 
   graceful-fs@4.2.11: {}
@@ -3035,11 +3030,6 @@ snapshots:
 
   punycode@2.3.1: {}
 
-  react-dom@19.2.3(react@dist+node_modules+react):
-    dependencies:
-      react: link:dist/node_modules/react
-      scheduler: 0.27.0
-
   react-refresh@0.18.0: {}
 
   read-pkg@5.2.0:
@@ -3139,8 +3129,6 @@ snapshots:
       '@rollup/rollup-win32-x64-msvc': 4.55.1
       fsevents: 2.3.3
 
-  scheduler@0.27.0: {}
-
   semver@5.7.2: {}
 
   semver@6.3.1: {}
@@ -3214,8 +3202,7 @@ snapshots:
     dependencies:
       typescript: 5.9.3
 
-  tslib@2.8.1:
-    optional: true
+  tslib@2.8.1: {}
 
   type-check@0.4.0:
     dependencies:
