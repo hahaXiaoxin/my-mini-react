@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 
 const Child = () => {
+  const [value] = useState(123);
+
   return (
     <div>
-      <span>456</span>
+      <span>{value}</span>
     </div>
   );
 };

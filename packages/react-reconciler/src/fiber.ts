@@ -17,7 +17,11 @@ export class FiberNode {
    * todo: 留个疑问：感觉这个像是用于判断 props 是否改变过程中的旧值？
    * */
   public memoizdedProps: Props | null;
-  /** 工作结束后确定的 state */
+  /**
+   * 工作结束后确定的 state
+   *
+   * 在 FC 之中，指向的是第一个 hook
+   * */
   public memoizedState: unknown;
 
   public stateNode: any;

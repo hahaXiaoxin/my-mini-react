@@ -2,7 +2,7 @@ import { getPackageJSON, resolvePkgPath, getBaseRollupPlugins } from './utils';
 import generatePackageJson from 'rollup-plugin-generate-package-json';
 import alias from '@rollup/plugin-alias';
 
-const { name, module, main } = getPackageJSON('react-dom');
+const { name, module, main, peerDependencies } = getPackageJSON('react-dom');
 // react-dom 包的路径
 const pkgPath = resolvePkgPath(name, false);
 // react-dom 产物路径
@@ -17,7 +17,6 @@ export default [
     // 为了兼容 17 和 18 的差异
     // 18 import ReactDOM from 'react-dom/client.js'
     // 17 import ReactDOM from 'react-dom'
-    external: ['react-dom/client'],
     output: [
       // react17
       {
@@ -32,6 +31,7 @@ export default [
         format: 'umd'
       }
     ],
+    external: ['react-dom/client', ...peerDependencies],
     plugins: [
       ...getBaseRollupPlugins(),
       alias({
