@@ -22,5 +22,5 @@ export function updateContainer(element: ReactElement | null, root: FiberRootNod
   /** 将 Update 入队 */
   enqueueUpdate(hostRootFiber.updateQueue as UpdateQueue<ReactElement | null>, update);
   scheduleUpdateOnFiber(hostRootFiber);
-  return;
+  return element;
 }

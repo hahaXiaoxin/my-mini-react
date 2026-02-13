@@ -9,7 +9,9 @@ export type Dispatch<State> = (action: Action<State>) => void;
 /**
  * 用于指向当前的 hooks 集合，update，mount不同阶段用的 hooks 集合不同
  */
-const currentDispatcher = {
+const currentDispatcher: {
+  current: null | Dispatcher;
+} = {
   current: null
 };
 

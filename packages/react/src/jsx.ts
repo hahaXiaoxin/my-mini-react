@@ -14,6 +14,10 @@ function ReactElement(type: Type, key: Key, ref: Ref, props: Props): ReactElemen
   return element;
 }
 
+export function isValidElement(object: any): object is ReactElement {
+  return typeof object === 'object' && object !== null && object.$$typeof === REACT_ELEMENT_TYPE;
+}
+
 /**
  * 将 jsx 解析后返回一个 ReactElement
  * @param type 组件类型

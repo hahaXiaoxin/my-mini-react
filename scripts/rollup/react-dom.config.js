@@ -21,17 +21,17 @@ export default [
       // react17
       {
         file: `${pkgDistPath}/index.js`,
-        name: 'index.js',
+        name: 'ReactDOM',
         format: 'umd'
       },
       // react18
       {
         file: `${pkgDistPath}/client.js`,
-        name: 'client.js',
+        name: 'client',
         format: 'umd'
       }
     ],
-    external: ['react-dom/client', ...peerDependencies],
+    external: ['react-dom/client', ...Object.keys(peerDependencies)],
     plugins: [
       ...getBaseRollupPlugins(),
       alias({
@@ -55,5 +55,19 @@ export default [
         }
       })
     ]
+  },
+  // react-test-utils
+  {
+    input: `${pkgPath}/test-utils.ts`,
+    output: [
+      // react17
+      {
+        file: `${pkgDistPath}/test-utils.js`,
+        name: 'testUtils',
+        format: 'umd'
+      }
+    ],
+    external: ['react-dom', 'react'],
+    plugins: getBaseRollupPlugins()
   }
 ];

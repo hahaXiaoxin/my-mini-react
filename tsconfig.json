@@ -1,5 +1,6 @@
 {
   "compileOnSave": true,
+  "include": ["./packages/**/*"],
   "compilerOptions": {
     "target": "ESNext",
     "useDefineForClassFields": true,
@@ -18,7 +19,7 @@
     "skipLibCheck": true,
     "baseUrl": "./packages",
     "paths": {
-        "host-config": ["./react-dom/src/host-config.ts"]
+      "host-config": ["./react-dom/src/host-config.ts"]
     }
   }
 }

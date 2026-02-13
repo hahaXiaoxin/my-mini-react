@@ -100,6 +100,9 @@ function performUnitOfWork(fiber: FiberNode) {
   const next = beginWork(fiber);
   fiber.memoizdedProps = fiber.pendingProps;
 
+  // todo：类型貌似有问题，undefined 不能赋值，那么提前处理一下这个路径
+  if (next === undefined) return;
+
   if (next === null) {
     completeUnitOfWork(fiber);
   } else {
