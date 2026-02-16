@@ -8,9 +8,11 @@ const Child = () => {
 };
 
 const App = () => {
+  const [value, setValue] = useState(1);
   return (
     <div>
-      <Child />
+      {/* <Child /> */}
+      <div onClick={() => {setValue(value + 1)}}>{value}</div>
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import { FiberNode } from 'react-reconciler/src/fiber';
 import { HostText } from 'react-reconciler/src/work-tags';
+import { DOMElement, updateFiberProps } from './synthetic-event';
 
 /**
  * 容器类型，跟宿主环境有关
@@ -17,8 +18,9 @@ export type TextInstance = Text;
  */
 export function createInstance(type: string, props: any): Instance {
   // todo 处理 props
-  const element = document.createElement(type);
-  return element;
+  const element = document.createElement(type) as unknown;
+  updateFiberProps(element as DOMElement, props);
+  return element as DOMElement;
 }
 
 /**

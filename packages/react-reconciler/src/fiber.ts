@@ -15,6 +15,8 @@ export class FiberNode {
   /**
    * 工作结束后确定的 props
    * todo: 留个疑问：感觉这个像是用于判断 props 是否改变过程中的旧值？
+   *
+   * 可以是旧的状态值，当接收一个 action，就会变成新值然后存在 memoizdedProps 之中
    * */
   public memoizdedProps: Props | null;
   /**

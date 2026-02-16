@@ -2,6 +2,7 @@ import { appendInitialChild, Container, createInstance, createTextInstance } fro
 import { FiberNode } from './fiber';
 import { FunctionComponent, HostComponent, HostRoot, HostText } from './work-tags';
 import { NoFlags, Update } from './fiber-flags';
+import { updateFiberProps } from 'react-dom/src/synthetic-event';
 
 /** 标记表明需要更新 */
 function markUpdate(fiber: FiberNode) {
@@ -18,6 +19,9 @@ export const completeWork = (wip: FiberNode) => {
       // 1. 构建 DOM
       if (current !== null && wip.stateNode) {
         // update
+        // props 是否发生变化
+        // className style
+        updateFiberProps(wip.stateNode, newProps);
       } else {
         // 1. 构建 DOM
         const instance = createInstance(wip.type, newProps);
@@ -32,7 +36,7 @@ export const completeWork = (wip: FiberNode) => {
       // 1. 构建 DOM
       if (current !== null && wip.stateNode) {
         // update
-        const oldText = current.memoizdedProps.content;
+        const oldText = current.memoizdedProps?.content;
         const newText = newProps.content;
 
         if (oldText !== newText) {
