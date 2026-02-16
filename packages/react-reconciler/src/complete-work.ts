@@ -1,7 +1,12 @@
 import { appendInitialChild, Container, createInstance, createTextInstance } from 'host-config';
 import { FiberNode } from './fiber';
 import { FunctionComponent, HostComponent, HostRoot, HostText } from './work-tags';
-import { NoFlags } from './fiber-flags';
+import { NoFlags, Update } from './fiber-flags';
+
+/** 标记表明需要更新 */
+function markUpdate(fiber: FiberNode) {
+  fiber.flags |= Update;
+}
 
 // 递归中的“归”
 export const completeWork = (wip: FiberNode) => {
@@ -27,6 +32,12 @@ export const completeWork = (wip: FiberNode) => {
       // 1. 构建 DOM
       if (current !== null && wip.stateNode) {
         // update
+        const oldText = current.memoizdedProps.content;
+        const newText = newProps.content;
+
+        if (oldText !== newText) {
+          markUpdate(wip);
+        }
       } else {
         // 1. 构建 DOM
         const instance = createTextInstance(newProps.content);
@@ -55,9 +66,10 @@ function appendAllChildren(parent: Container, wip: FiberNode) {
 
   while (node !== null) {
     // 只处理 HostComponent 和 HostText，
-    if (node?.tag === HostComponent || node?.tag === HostText) {
+    if (node.tag === HostComponent || node.tag === HostText) {
       appendInitialChild(parent, node.stateNode);
     } else if (node.child !== null) {
+      // 如果不是 Host 节点（如 FunctionComponent），向下找它的子节点
       node.child.return = node;
       node = node.child;
       continue;
@@ -67,6 +79,7 @@ function appendAllChildren(parent: Container, wip: FiberNode) {
       return;
     }
 
+    // 没有 sibling，向上回溯
     while (node.sibling === null) {
       if (node.return === null || node.return === wip) {
         return;

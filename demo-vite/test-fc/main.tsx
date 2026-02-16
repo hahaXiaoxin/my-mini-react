@@ -2,16 +2,12 @@ import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 
 const Child = () => {
-  const [value] = useState(123);
-
-  return (
-    <div>
-      <span>{value}</span>
-    </div>
-  );
+  return <div>
+    <span>mini-react</span>
+  </div>;
 };
 
-const a = () => {
+const App = () => {
   return (
     <div>
       <Child />
@@ -21,8 +17,8 @@ const a = () => {
 
 const root = document.querySelector('#root');
 
-ReactDOM.createRoot(root).render(a);
+ReactDOM.createRoot(root!).render(<App />);
 
-console.log(React, a);
+console.log(React);
 console.log(ReactDOM);
 console.log(ReactDOM.createRoot);

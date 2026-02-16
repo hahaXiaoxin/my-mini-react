@@ -49,6 +49,9 @@ export class FiberNode {
 
   public updateQueue: unknown;
 
+  /** 指向需要删除的子 FiberNode*/
+  public deletions: FiberNode[] | null;
+
   public constructor(tag: WorkTag, pendingProps: Props, key: Key) {
     // 实例 本身所需要的属性
     this.tag = tag;
@@ -76,6 +79,7 @@ export class FiberNode {
     // 副作用（增删改）
     this.flags = NoFlags;
     this.subtreeFlags = NoFlags;
+    this.deletions = null;
   }
 }
 
@@ -115,6 +119,8 @@ export function createWorkInProgress(current: FiberNode, pendingProps: Props): F
     // update
     wip.pendingProps = pendingProps;
     wip.flags = NoFlags;
+    wip.subtreeFlags = NoFlags;
+    wip.deletions = null;
   }
 
   wip.type = current.type;

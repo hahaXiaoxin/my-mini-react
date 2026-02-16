@@ -40,17 +40,14 @@ function renderRoot(root: FiberRootNode) {
   // 初始化
   prepareRefreshStack(root);
 
-  do {
-    try {
-      workLoop();
-      break;
-    } catch (e) {
-      if (__DEV__) {
-        console.warn('workLoop 发生错误', e);
-      }
-      workInProgress = null;
+  try {
+    workLoop();
+  } catch (e) {
+    if (__DEV__) {
+      console.warn('workLoop 发生错误', e);
     }
-  } while (true);
+    workInProgress = null;
+  }
 
   const finishedWork = root.current.alternate;
   root.finishedWork = finishedWork;

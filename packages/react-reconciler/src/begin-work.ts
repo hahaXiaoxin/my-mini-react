@@ -57,7 +57,7 @@ function updateHostComponent(wip: FiberNode) {
 function reconcileChildren(wip: FiberNode, children: ReactElement) {
   const current = wip.alternate;
 
-  // 说明此时是 Update 流程
+  // 说明此时是 Update 流程（由于 mount 时，只有 hostRoot 的 alternate 不为空，所以刚刚好此时只需要给 APP Fiber 打上 Placement，实现离屏构建 DOM）
   if (current !== null) {
     wip.child = reconcileChildFibers(wip, current.child, children);
   }
