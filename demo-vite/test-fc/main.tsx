@@ -20,8 +20,12 @@ const App = () => {
   ];
   return (
     <div>
-      {/* <Child /> */}
-      <ul onClick={() => { setValue(value + 1) }}>{arr}</ul>
+
+      <ul onClick={() => { setValue(value + 1) }}>
+        <li>4</li>
+        <li>5</li>
+        {arr}
+      </ul>
     </div>
   );
 };

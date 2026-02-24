@@ -1,5 +1,5 @@
 import { Key, Props, ReactElement, Ref } from 'shared/react-types';
-import { FunctionComponent, HostComponent, WorkTag } from './work-tags';
+import { Fragment, FunctionComponent, HostComponent, WorkTag } from './work-tags';
 import { Flags, NoFlags } from './fiber-flags';
 import { Container } from 'host-config';
 
@@ -57,7 +57,7 @@ export class FiberNode {
   public constructor(tag: WorkTag, pendingProps: Props, key: Key) {
     // 实例 本身所需要的属性
     this.tag = tag;
-    this.key = key;
+    this.key = key || null;
     // HostComponent <div> div DOM
     this.stateNode = null;
     // FunctionComponent () => {}
@@ -150,6 +150,12 @@ export function createFiberFromElement(element: ReactElement): FiberNode {
   const fiber = new FiberNode(fiberTag, props, key);
 
   fiber.type = type;
+
+  return fiber;
+}
+
+export function createFiberFromFragment(elements: any[], key: Key): FiberNode {
+  const fiber = new FiberNode(Fragment, elements, key);
 
   return fiber;
 }

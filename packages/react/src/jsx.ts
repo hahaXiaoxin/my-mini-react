@@ -1,4 +1,4 @@
-import { REACT_ELEMENT_TYPE } from 'shared/react-symbols';
+import { REACT_ELEMENT_TYPE, REACT_FRAGMENT_TYPE } from 'shared/react-symbols';
 import type { Type, Key, Ref, Props, ReactElement, ElementType } from 'shared/react-types';
 
 function ReactElement(type: Type, key: Key, ref: Ref, props: Props): ReactElement {
@@ -67,6 +67,8 @@ export function jsx(type: ElementType, config: any, ...maybeChildren: any[]): Re
 
   return ReactElement(type, key, ref, props);
 }
+
+export const Fragment = REACT_FRAGMENT_TYPE;
 
 /**
  * jsxDEV 是 jsx 的开发版本

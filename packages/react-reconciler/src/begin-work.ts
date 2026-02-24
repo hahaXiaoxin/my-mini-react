@@ -1,7 +1,7 @@
 import { ReactElement } from 'shared/react-types';
 import { FiberNode } from './fiber';
 import { processUpdateQueue, UpdateQueue } from './update-queue';
-import { FunctionComponent, HostComponent, HostRoot, HostText } from './work-tags';
+import { Fragment, FunctionComponent, HostComponent, HostRoot, HostText } from './work-tags';
 import { mountChildFibers, reconcileChildFibers } from './child-fibers';
 import { renderWithHook } from './fiber-hooks';
 
@@ -18,6 +18,8 @@ export const beginWork = (wip: FiberNode) => {
       return updateHostComponent(wip);
     case FunctionComponent:
       return updateFunctionComponent(wip);
+    case Fragment:
+      return updateFragment(wip);
     default:
       if (__DEV__) {
         console.warn('beginWork 未实现的类型');
@@ -25,6 +27,12 @@ export const beginWork = (wip: FiberNode) => {
       break;
   }
 };
+
+function updateFragment(wip: FiberNode) {
+  const nextChildren = wip.pendingProps;
+  reconcileChildren(wip, nextChildren);
+  return wip.child;
+}
 
 function updateFunctionComponent(wip: FiberNode) {
   // 获取函数式组件的真正 ReactElement

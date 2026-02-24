@@ -1,7 +1,7 @@
 // 记录各种 Tag 的 类型
 
 /** workTag */
-export type WorkTag = typeof FunctionComponent | typeof HostRoot | typeof HostComponent | typeof HostText;
+export type WorkTag = typeof FunctionComponent | typeof HostRoot | typeof HostComponent | typeof HostText | typeof Fragment;
 
 /** 函数式组件 */
 export const FunctionComponent = 0;
@@ -14,3 +14,6 @@ export const HostComponent = 5;
 
 /** 文本节点 */
 export const HostText = 6;
+
+/** Fragment 类型节点 */
+export const Fragment = 7;

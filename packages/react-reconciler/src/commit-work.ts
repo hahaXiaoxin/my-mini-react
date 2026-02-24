@@ -61,24 +61,69 @@ function commitMutationEffectsOnFiber(finishedWork: FiberNode) {
   }
 }
 
+/**
+ * 收集需要从 DOM 中删除的顶层 Host 节点
+ *
+ * 当删除 Fragment 或函数组件时，它们本身没有对应的 DOM 节点，
+ * 真正需要删除的是它们的子 Host 节点。此函数用于收集这些顶层 Host 节点。
+ *
+ * @example
+ * 删除以下 Fragment 时：
+ * ```jsx
+ * <>
+ *   <div>              // 顶层 Host 1 ✅ 需要删除
+ *     <span>child</span>  // 嵌套的 Host ❌ 不需要单独删除，删父节点时会一起删
+ *   </div>
+ *   <p>text</p>        // 顶层 Host 2 ✅ 需要删除（是 div 的兄弟节点）
+ * </>
+ * ```
+ *
+ * commitNestedComponent 会深度优先遍历整个子树，遇到每个 Host 节点都会调用此函数：
+ * 1. 遇到 <div> → 数组为空，直接 push
+ * 2. 遇到 <span> → 检查是否是 <div> 的兄弟？不是（是子节点），不添加
+ * 3. 遇到 <p> → 检查是否是 <div> 的兄弟？是，添加
+ *
+ * 最终 childrenToDelete = [div, p]，然后分别删除这两个 DOM 节点
+ *
+ * @param childrenToDelete - 收集需要删除的顶层 Host 节点数组
+ * @param unmountFiber - 当前遍历到的需要卸载的 fiber 节点
+ */
+function recordHostChildrenToDelete(childrenToDelete: FiberNode[], unmountFiber: FiberNode) {
+  const lastOne = childrenToDelete[childrenToDelete.length - 1];
+
+  if (!lastOne) {
+    // 数组为空，说明这是第一个 host 节点，直接添加
+    childrenToDelete.push(unmountFiber);
+  } else {
+    // 数组不为空，需要检查当前节点是否是上一个节点的兄弟节点
+    // 只有兄弟节点才是同一层级的顶层 Host，需要单独删除
+    // 如果是子节点，删除父节点时会一并删除，无需单独处理
+    let node = lastOne.sibling;
+
+    while (node !== null) {
+      if (unmountFiber === node) {
+        childrenToDelete.push(node);
+      }
+      node = node.sibling;
+    }
+  }
+}
+
 /** commit 删除操作 */
 function commitDeletion(childToDelete: FiberNode) {
-  // 用于指向需要删除的 fiberNode 对应的顶层，这样只需要移除一次即可
-  let rootHostNode: FiberNode | null = null;
+  // 收集需要删除的节点
+  const rootChildrenToDelete: FiberNode[] = [];
 
   // 递归子树
   commitNestedComponent(childToDelete, (unmountFiber) => {
     switch (unmountFiber.tag) {
       case HostComponent:
-        if (rootHostNode === null) {
-          rootHostNode = unmountFiber;
-        }
+        recordHostChildrenToDelete(rootChildrenToDelete, unmountFiber);
         // TODO 解绑 ref
         return;
       case HostText:
-        if (rootHostNode === null) {
-          rootHostNode = unmountFiber;
-        }
+        recordHostChildrenToDelete(rootChildrenToDelete, unmountFiber);
+
         return;
       case FunctionComponent:
         // TODO useEffect unmount
@@ -92,10 +137,12 @@ function commitDeletion(childToDelete: FiberNode) {
   });
 
   // 移除 rootHostComponent 的 DOM
-  if (rootHostNode !== null) {
-    const hostParent = getHostParent(rootHostNode);
+  if (rootChildrenToDelete.length) {
+    const hostParent = getHostParent(childToDelete);
     if (hostParent !== null) {
-      removeChild((rootHostNode as FiberNode).stateNode, hostParent);
+      rootChildrenToDelete.forEach((node) => {
+        removeChild(node.stateNode, hostParent);
+      });
     }
   }
 
