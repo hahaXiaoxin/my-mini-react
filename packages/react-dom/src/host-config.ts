@@ -65,3 +65,7 @@ export function commitTextUpdate(textInstance: TextInstance, content: string) {
 export function removeChild(child: Instance | TextInstance, container: Container) {
   container.removeChild(child);
 }
+
+export function insertChildToContainer(child: Instance, container: Container, before: Instance) {
+  container.insertBefore(child, before);
+}

@@ -1,4 +1,4 @@
-import { appendChildToContainer, commitUpdate, Container, removeChild } from 'host-config';
+import { appendChildToContainer, commitUpdate, Container, insertChildToContainer, Instance, removeChild } from 'host-config';
 import { FiberNode } from './fiber';
 import { Placement, MutationMask, NoFlags, Update, ChildDeletion } from './fiber-flags';
 import { FunctionComponent, HostComponent, HostRoot, HostText } from './work-tags';
@@ -101,7 +101,6 @@ function commitDeletion(childToDelete: FiberNode) {
 
   childToDelete.return = null;
   childToDelete.child = null;
-
 }
 
 /**
@@ -147,12 +146,54 @@ function commitPlacement(finishedWork: FiberNode) {
   // parent DOM
   const hostParent = getHostParent(finishedWork);
 
+  // host sibling
+  const sibling = getHostSibling(finishedWork);
+
   if (__DEV__) {
     console.warn('找到 hostParent:', hostParent);
   }
 
   if (hostParent !== null) {
-    appendPlacementNodeIntoContainer(finishedWork, hostParent);
+    // sibling 可能为 null，这样就直接执行append 就好了
+    insertOrAppendPlacementNodeIntoContainer(finishedWork, hostParent, sibling);
+  }
+}
+
+/** 用于查找当前 fiber 的兄弟 host 节点（在浏览器中是 dom） */
+function getHostSibling(fiber: FiberNode) {
+  let node: FiberNode = fiber;
+
+  findSibling: while (true) {
+    while (node.sibling === null) {
+      const parent = node.return;
+
+      if (parent === null || parent.tag === HostComponent || parent.tag === HostRoot) {
+        return null;
+      }
+
+      node = parent;
+    }
+
+    node.sibling.return = node.return;
+    node = node.sibling;
+
+    while (node.tag !== HostText && node.tag !== HostComponent) {
+      // 向下遍历
+      if ((node.flags & Placement) !== NoFlags) {
+        continue findSibling;
+      }
+
+      if (node.child === null) {
+        continue findSibling;
+      } else {
+        node.child.return = node;
+        node = node.child;
+      }
+    }
+
+    if ((node.flags & Placement) === NoFlags) {
+      return node.stateNode;
+    }
   }
 }
 
@@ -184,7 +225,7 @@ function getHostParent(fiber: FiberNode): Container | null {
  * 将 Fiber 节点对应的 DOM 节点插入到 hostParent 中
  * 真实 DOM 修改
  */
-function appendPlacementNodeIntoContainer(finishedWork: FiberNode, hostParent: Container | null) {
+function insertOrAppendPlacementNodeIntoContainer(finishedWork: FiberNode, hostParent: Container | null, before?: Instance) {
   // fiber host 不可能是 hostRoot
   if (hostParent === null) {
     return;
@@ -196,17 +237,21 @@ function appendPlacementNodeIntoContainer(finishedWork: FiberNode, hostParent: C
     if (__DEV__) {
       console.warn('appendPlacementNodeIntoContainer: 插入 DOM', finishedWork.stateNode, '到', hostParent);
     }
+    if (before) {
+      insertChildToContainer(finishedWork.stateNode, hostParent, before);
+      return;
+    }
     appendChildToContainer(hostParent, finishedWork.stateNode);
     return;
   }
 
   const child = finishedWork.child;
   if (child !== null) {
-    appendPlacementNodeIntoContainer(child, hostParent);
+    insertOrAppendPlacementNodeIntoContainer(child, hostParent);
     let sibling = child.sibling;
 
     while (sibling !== null) {
-      appendPlacementNodeIntoContainer(sibling, hostParent);
+      insertOrAppendPlacementNodeIntoContainer(sibling, hostParent);
       sibling = sibling.sibling;
     }
   }
