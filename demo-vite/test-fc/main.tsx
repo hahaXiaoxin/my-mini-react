@@ -21,10 +21,12 @@ const App = () => {
   return (
     <div>
 
-      <ul onClick={() => { setValue(value + 1) }}>
-        <li>4</li>
-        <li>5</li>
-        {arr}
+      <ul onClick={() => {
+        setValue(num => num++);
+        setValue(num => num++);
+        setValue(num => num++);
+      }}>
+        {value}
       </ul>
     </div>
   );

@@ -4,6 +4,7 @@ import { Dispatcher, Dispatch } from 'react/src/current-dispatcher';
 import { createUpdate, createUpdateQueue, enqueueUpdate, processUpdateQueue, UpdateQueue } from './update-queue';
 import { Action } from 'shared/react-types';
 import { scheduleUpdateOnFiber } from './work-loop';
+import { Lane, NoLane, requestUpdateLane } from './fiber-lanes';
 
 /** 用于指向当前正在渲染的 FiberNode */
 let currentlyRenderingFiber: FiberNode | null = null;
@@ -11,6 +12,7 @@ let currentlyRenderingFiber: FiberNode | null = null;
 let workInProgressHook: Hook | null = null;
 /** 用于指向当前的 hook 数据 */
 let currentHook: Hook | null = null;
+let renderLane: Lane = NoLane;
 
 const { currentDispatcher } = internals;
 
@@ -22,11 +24,13 @@ interface Hook {
   next: Hook | null;
 }
 
-export function renderWithHook(wip: FiberNode) {
+export function renderWithHook(wip: FiberNode, lane: Lane) {
   // 赋值操作
   currentlyRenderingFiber = wip;
   // 重置 hooks 链表
   wip.memoizedState = null;
+
+  renderLane = lane;
 
   const current = wip.alternate;
 
@@ -49,7 +53,7 @@ export function renderWithHook(wip: FiberNode) {
   currentlyRenderingFiber = null;
   workInProgressHook = null;
   currentHook = null;
-
+  renderLane = NoLane;
   return children;
 }
 
@@ -96,7 +100,7 @@ function updateState<State>(): [State, Dispatch<State>] {
   const pending = queue.shared.pending;
 
   if (pending !== null) {
-    const { memoizedState } = processUpdateQueue(hook.memoizedState, pending);
+    const { memoizedState } = processUpdateQueue(hook.memoizedState, pending, renderLane);
     hook.memoizedState = memoizedState;
   }
 
@@ -104,9 +108,10 @@ function updateState<State>(): [State, Dispatch<State>] {
 }
 
 function dispatchSetState<State>(fiber: FiberNode, updateQueue: UpdateQueue<State>, action: Action<State>) {
-  const update = createUpdate<State>(action);
+  const lane = requestUpdateLane();
+  const update = createUpdate<State>(action, lane);
   enqueueUpdate<State>(updateQueue, update);
-  scheduleUpdateOnFiber(fiber);
+  scheduleUpdateOnFiber(fiber, lane);
 }
 
 /** 获取到当前 hook 的数据 */
