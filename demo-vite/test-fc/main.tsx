@@ -22,9 +22,9 @@ const App = () => {
     <div>
 
       <ul onClick={() => {
-        setValue(num => num++);
-        setValue(num => num++);
-        setValue(num => num++);
+        setValue(num => num + 1);
+        setValue(num => num + 1);
+        setValue(num => num + 1);
       }}>
         {value}
       </ul>
