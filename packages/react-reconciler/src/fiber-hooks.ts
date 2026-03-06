@@ -5,6 +5,9 @@ import { createUpdate, createUpdateQueue, enqueueUpdate, processUpdateQueue, Upd
 import { Action } from 'shared/react-types';
 import { scheduleUpdateOnFiber } from './work-loop';
 import { Lane, NoLane, requestUpdateLane } from './fiber-lanes';
+import { Flags, PassiveEffect } from './fiber-flags';
+import { FC } from 'react';
+import { HookHasEffect, Passive } from './hook-effect-tags';
 
 /** 用于指向当前正在渲染的 FiberNode */
 let currentlyRenderingFiber: FiberNode | null = null;
@@ -24,11 +27,28 @@ interface Hook {
   next: Hook | null;
 }
 
+export interface Effect {
+  tag: Flags;
+  create: EffectCallback | void;
+  destroy: EffectCallback | void;
+  deps: EffectDeps;
+  next: Effect | null;
+}
+
+export interface FCUpdateQueue<State> extends UpdateQueue<State> {
+  lastEffect: Effect | null;
+}
+
+type EffectCallback = () => void;
+type EffectDeps = any[] | null;
+
 export function renderWithHook(wip: FiberNode, lane: Lane) {
   // 赋值操作
   currentlyRenderingFiber = wip;
   // 重置 hooks 链表
   wip.memoizedState = null;
+  // 充值 effect 链表
+  wip.updateQueue = null;
 
   renderLane = lane;
 
@@ -58,12 +78,108 @@ export function renderWithHook(wip: FiberNode, lane: Lane) {
 }
 
 const HooksDispatcherOnMount: Dispatcher = {
-  useState: mountState
+  useState: mountState,
+  useEffect: mountEffect
 };
 
 const HooksDispatcherOnUpdate: Dispatcher = {
-  useState: updateState
+  useState: updateState,
+  useEffect: updateEffect
 };
+
+/** 挂载时使用的 useEffect */
+function mountEffect(create: EffectCallback | void, deps: EffectDeps | void) {
+  // 找到当前 useEffect 对应的 hook 数据
+  const hook = mountWorkInProgressHook();
+  const nextDeps = deps === undefined ? null : deps;
+  currentlyRenderingFiber!.flags |= PassiveEffect;
+
+  hook.memoizedState = pushEffect(Passive | HookHasEffect, create, undefined, nextDeps);
+}
+
+function areHookInputsEqual(nextDeps: EffectDeps, prevDeps: EffectDeps) {
+  if (prevDeps === null || nextDeps === null) {
+    return false;
+  }
+
+  for (let i = 0; i < prevDeps.length && i < nextDeps.length; i++) {
+    if (Object.is(prevDeps[i], nextDeps[i])) {
+      continue;
+    }
+
+    return false;
+  }
+
+  return true;
+}
+
+function pushEffect(hookFlag: Flags, create: EffectCallback | void, destroy: EffectCallback | void, deps: EffectDeps): Effect {
+  const effect: Effect = {
+    tag: hookFlag,
+    create,
+    destroy,
+    deps,
+    next: null
+  };
+
+  const fiber = currentlyRenderingFiber as FiberNode;
+  const updateQueue = fiber.updateQueue as FCUpdateQueue<any>;
+
+  if (updateQueue === null) {
+    const updateQueue = createFCUpdateQueue();
+    fiber.updateQueue = updateQueue;
+    updateQueue.lastEffect = effect;
+    effect.next = effect;
+  } else {
+    // 插入 effect
+    const lastEffect = updateQueue.lastEffect;
+    if (lastEffect === null) {
+      effect.next = effect;
+      updateQueue.lastEffect = effect;
+    } else {
+      const firstEffect = lastEffect.next;
+      lastEffect.next = effect;
+      effect.next = firstEffect;
+      updateQueue.lastEffect = effect;
+    }
+  }
+
+  return effect;
+}
+
+function createFCUpdateQueue<State>() {
+  const updateQueue = createUpdateQueue<State>() as FCUpdateQueue<State>;
+
+  updateQueue.lastEffect = null;
+  return updateQueue;
+}
+
+/** 更新时使用的 useEffect */
+function updateEffect(create: EffectCallback | void, deps: EffectDeps | void) {
+  // 找到当前 useEffect 对应的 hook 数据
+  const hook = updateWorkInProgressHook();
+  const nextDeps = deps === undefined ? null : deps;
+  let destroy: EffectCallback | void;
+
+  // 理论上来说不会等于 null，因为在updateWorkInProgressHook就已经判断过了
+  if (currentHook !== null) {
+    const prevEffect = currentHook.memoizedState as Effect;
+    destroy = prevEffect.destroy;
+
+    if (nextDeps !== null) {
+      // 浅比较
+      const prevDeps = prevEffect.deps;
+      // 依赖没有变化，就不需要打上 HookHasEffect flag
+      if (areHookInputsEqual(nextDeps, prevDeps)) {
+        hook.memoizedState = pushEffect(Passive, create, destroy, nextDeps);
+        return;
+      }
+    }
+
+    currentlyRenderingFiber!.flags |= PassiveEffect;
+    hook.memoizedState = pushEffect(Passive | HookHasEffect, create, destroy, nextDeps);
+  }
+}
 
 /** 挂载时使用的 useState */
 function mountState<State>(initialState: (() => State) | State): [State, Dispatch<State>] {
