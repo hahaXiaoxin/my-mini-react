@@ -18,7 +18,7 @@ export default defineConfig([
   tseslint.configs.recommended,
   {
     // 测试文件特殊配置（必须在 tseslint.configs.recommended 之后以覆盖其规则）
-    files: ['**/__tests__/**/*.{js,ts,jsx,tsx}', '**/*.test.{js,ts,jsx,tsx}', '**/*.spec.{js,ts,jsx,tsx}'],
+    files: ['**/__tests__/**/*.{js,ts,jsx,tsx}', '**/*.test.{js,ts,jsx,tsx}', '**/*.spec.{js,ts,jsx,tsx}', 'scripts/jest/**/*.{js,ts}'],
     languageOptions: { globals: { ...globals.jest, ...globals.node } },
     rules: {
       // 允许测试文件中使用 require()，因为 jest.resetModules() 后需要动态导入

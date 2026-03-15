@@ -1,70 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import ReactDOM from 'react-dom';
-
-// const Child = () => {
-//   return <div>
-//     <span>mini-react</span>
-//   </div>;
-// };
-
-// const App = () => {
-//   const [value, setValue] = useState(1);
-//   const arr = value % 2 === 0 ? [
-//     <li key={1}>1</li>,
-//     <li key={2}>2</li>,
-//     <li key={3}>3</li>,
-//   ] : [
-//     <li key={3}>3</li>,
-//     <li key={2}>2</li>,
-//     <li key={1}>1</li>,
-//   ];
-//   return (
-//     <div>
-
-//       <ul onClick={() => {
-//         setValue(num => num + 1);
-//         setValue(num => num + 1);
-//         setValue(num => num + 1);
-//       }}>
-//         {value}
-//       </ul>
-//     </div>
-//   );
-// };
+import ReactDOM from 'react-noop-renderer';
 
 function App() {
-  const [num, updateNum] = useState(0);
-  useEffect(() => {
-    console.log('App mount');
-  }, []);
-
-  useEffect(() => {
-    console.log('num change create', num);
-    return () => {
-      console.log('num change destroy', num);
-    };
-  }, [num]);
-
   return (
-    <div onClick={() => updateNum(num + 1)}>
-      {num === 0 ? <Child /> : 'noop'}
-    </div>
-  );
+    <>
+      <Child />
+      <div>hello world</div>
+    </>
+  )
 }
 
 function Child() {
-  useEffect(() => {
-    console.log('Child mount');
-    return () => console.log('Child unmount');
-  }, []);
-
-  return 'i am child';
+  return (
+    <div>child</div>
+  )
 }
 
-const root = document.querySelector('#root');
+const root = ReactDOM.createRoot();
 
-ReactDOM.createRoot(root!).render(<App />);
+root.render(<App />)
 
-console.log(React);
-console.log(ReactDOM);
-console.log(ReactDOM.createRoot);
+window.root = root;

@@ -1,8 +1,7 @@
-import { appendInitialChild, Container, createInstance, createTextInstance } from 'host-config';
+import { appendInitialChild, Container, createInstance, createTextInstance, Instance } from 'host-config';
 import { FiberNode } from './fiber';
 import { Fragment, FunctionComponent, HostComponent, HostRoot, HostText } from './work-tags';
 import { NoFlags, Update } from './fiber-flags';
-import { updateFiberProps } from 'react-dom/src/synthetic-event';
 
 /** 标记表明需要更新 */
 function markUpdate(fiber: FiberNode) {
@@ -18,10 +17,11 @@ export const completeWork = (wip: FiberNode) => {
     case HostComponent:
       // 1. 构建 DOM
       if (current !== null && wip.stateNode) {
+        // TODO update
         // update
         // props 是否发生变化
         // className style
-        updateFiberProps(wip.stateNode, newProps);
+        markUpdate(wip);
       } else {
         // 1. 构建 DOM
         const instance = createInstance(wip.type, newProps);
@@ -64,7 +64,7 @@ export const completeWork = (wip: FiberNode) => {
 };
 
 /** 将对应的 DOM 树拼装出来 */
-function appendAllChildren(parent: Container, wip: FiberNode) {
+function appendAllChildren(parent: Container | Instance, wip: FiberNode) {
   let node = wip.child;
 
   while (node !== null) {

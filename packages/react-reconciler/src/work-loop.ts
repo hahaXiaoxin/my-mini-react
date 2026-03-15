@@ -14,7 +14,7 @@ import { HookHasEffect, Passive } from './hook-effect-tags';
 let workInProgress: FiberNode | null = null;
 /** 全局指针，指向当前正在处理的 lane */
 let wipRootRenderLane: Lane = NoLane;
-let rootDoesHasPassiveEffects: boolean = false;
+let rootDoesHasPassiveEffects = false;
 
 function prepareRefreshStack(root: FiberRootNode, lane: Lane) {
   workInProgress = createWorkInProgress(root.current, {});

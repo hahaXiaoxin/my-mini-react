@@ -6,7 +6,6 @@ import { Action } from 'shared/react-types';
 import { scheduleUpdateOnFiber } from './work-loop';
 import { Lane, NoLane, requestUpdateLane } from './fiber-lanes';
 import { Flags, PassiveEffect } from './fiber-flags';
-import { FC } from 'react';
 import { HookHasEffect, Passive } from './hook-effect-tags';
 
 /** 用于指向当前正在渲染的 FiberNode */
