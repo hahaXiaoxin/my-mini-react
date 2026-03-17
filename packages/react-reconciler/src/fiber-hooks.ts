@@ -1,7 +1,7 @@
 import internals from 'shared/internals';
 import { FiberNode } from './fiber';
 import { Dispatcher, Dispatch } from 'react/src/current-dispatcher';
-import { createUpdate, createUpdateQueue, enqueueUpdate, processUpdateQueue, UpdateQueue } from './update-queue';
+import { createUpdate, createUpdateQueue, enqueueUpdate, processUpdateQueue, Update, UpdateQueue } from './update-queue';
 import { Action } from 'shared/react-types';
 import { scheduleUpdateOnFiber } from './work-loop';
 import { Lane, NoLane, requestUpdateLane } from './fiber-lanes';
@@ -24,6 +24,8 @@ interface Hook {
   updateQueue: any;
   /** 指向当前 component 的下一个 hook */
   next: Hook | null;
+  baseState: any;
+  baseQueue: Update<any> | null;
 }
 
 export interface Effect {
@@ -212,12 +214,32 @@ function updateState<State>(): [State, Dispatch<State>] {
 
   // 计算新 state 的逻辑
   const queue = hook.updateQueue as UpdateQueue<State>;
+  const baseState = hook.baseState;
+
   const pending = queue.shared.pending;
-  queue.shared.pending = null;
+  const current = currentHook!;
+  let baseQueue = current.baseQueue;
 
   if (pending !== null) {
-    const { memoizedState } = processUpdateQueue(hook.memoizedState, pending, renderLane);
-    hook.memoizedState = memoizedState;
+    // pending baseQueue update 保存在 current 中
+    if (baseQueue !== null) {
+      // 两条环状链表的合并，看不懂就问 AI
+      const baseFirst = baseQueue.next;
+      const pendingFirst = pending.next;
+      baseQueue.next = pendingFirst;
+      pending.next = baseFirst;
+    }
+    baseQueue = pending;
+    // 保存在 current 中
+    current.baseQueue = pending;
+    queue.shared.pending = null;
+
+    if (baseQueue !== null) {
+      const { memoizedState, baseQueue: newBaseQueue, baseState: newBaseState } = processUpdateQueue(baseState, baseQueue, renderLane);
+      hook.memoizedState = memoizedState;
+      hook.baseState = newBaseState;
+      hook.baseQueue = newBaseQueue;
+    }
   }
 
   return [hook.memoizedState, queue.dispatch as Dispatch<State>];
@@ -235,7 +257,9 @@ function mountWorkInProgressHook(): Hook {
   const hook: Hook = {
     memoizedState: null,
     updateQueue: null,
-    next: null
+    next: null,
+    baseQueue: null,
+    baseState: null
   };
 
   // mount 时，第一个hook
@@ -284,7 +308,9 @@ function updateWorkInProgressHook(): Hook {
   const newHook: Hook = {
     memoizedState: currentHook.memoizedState,
     updateQueue: currentHook.updateQueue,
-    next: null
+    next: null,
+    baseQueue: currentHook.baseQueue,
+    baseState: currentHook.baseState
   };
 
   // mount 时，第一个hook

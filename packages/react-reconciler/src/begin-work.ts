@@ -42,6 +42,7 @@ function updateFunctionComponent(wip: FiberNode, renderLane: Lane) {
   return wip.child;
 }
 
+/** 首屏渲染逻辑 */
 function updateHostRoot(wip: FiberNode, renderLane: Lane) {
   const baseState = wip.memoizedState as Element;
   const updateQueue = wip.updateQueue as UpdateQueue<Element>;
