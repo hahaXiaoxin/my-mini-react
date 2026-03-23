@@ -125,7 +125,9 @@ export function processUpdateQueue<State>(
     } else {
       newBaseQueueLast!.next = newBaseQueueFirst;
     }
+    // 当前高优先级任务执行后的结果（需要给用户看的）
     result.memoizedState = newState;
+    // 下一次更新时的基础，需要使用 baseState + baseQueue 来计算
     result.baseState = newBaseState;
     result.baseQueue = newBaseQueueLast;
   }
