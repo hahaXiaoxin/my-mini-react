@@ -11,6 +11,7 @@
     "build:dev": "rimraf dist && rollup --bundleConfigAsCjs --config scripts/rollup/dev.config.js",
     "build:react": "rimraf dist && rollup --bundleConfigAsCjs --config scripts/rollup/react.config.js",
     "demo:fc": "vite serve demo-vite/test-fc --config scripts/vite/vite.config.js --force",
+    "demo:transition": "vite serve demo-vite/transition --config scripts/vite/vite.config.js --force",
     "test": "jest --config scripts/jest/jest.config.js"
   },
   "keywords": [],

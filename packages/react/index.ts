@@ -1,5 +1,6 @@
 import { jsx, isValidElement as isValidElementFn } from './src/jsx';
 import currentDispatcher from './src/current-dispatcher';
+import currentBatchConfig from './src/current-batch-config';
 import { Dispatcher, resolveDispatcher } from './src/current-dispatcher';
 // React
 
@@ -16,9 +17,15 @@ export const useEffect: Dispatcher['useEffect'] = (create, deps) => {
   return dispatcher.useEffect(create, deps);
 };
 
+export const useTransition: Dispatcher['useTransition'] = () => {
+  const dispatcher = resolveDispatcher();
+  return dispatcher.useTransition();
+};
+
 /** 内部数据共享层 */
 export const __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED = {
-  currentDispatcher
+  currentDispatcher,
+  currentBatchConfig
 };
 
 export const version = '0.0.0';
