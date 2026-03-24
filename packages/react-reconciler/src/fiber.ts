@@ -31,7 +31,7 @@ export class FiberNode {
 
   public stateNode: any;
 
-  public ref: Ref;
+  public ref: Ref | null;
 
   /** 指向父 fiberNode */
   public return: FiberNode | null;
@@ -49,6 +49,9 @@ export class FiberNode {
   public alternate: FiberNode | null;
 
   public flags: Flags;
+
+  public lanes: Lanes;
+  public childLanes: Lanes;
 
   public subtreeFlags: Flags;
 
@@ -85,6 +88,9 @@ export class FiberNode {
     this.flags = NoFlags;
     this.subtreeFlags = NoFlags;
     this.deletions = null;
+
+    this.lanes = NoLanes;
+    this.childLanes = NoLanes;
   }
 }
 
@@ -160,6 +166,7 @@ export function createWorkInProgress(current: FiberNode, pendingProps: Props): F
   wip.child = current.child;
   wip.memoizdedProps = current.memoizdedProps;
   wip.memoizedState = current.memoizedState;
+  wip.ref = current.ref;
   wip.sibling = current.sibling;
   wip.return = current.return;
 
@@ -167,7 +174,7 @@ export function createWorkInProgress(current: FiberNode, pendingProps: Props): F
 }
 
 export function createFiberFromElement(element: ReactElement): FiberNode {
-  const { type, key, props } = element;
+  const { type, key, props, ref } = element;
 
   let fiberTag: WorkTag = FunctionComponent;
 
@@ -180,6 +187,7 @@ export function createFiberFromElement(element: ReactElement): FiberNode {
   const fiber = new FiberNode(fiberTag, props, key);
 
   fiber.type = type;
+  fiber.ref = ref;
 
   return fiber;
 }

@@ -82,15 +82,18 @@ export function renderWithHook(wip: FiberNode, lane: Lane) {
 const HooksDispatcherOnMount: Dispatcher = {
   useState: mountState,
   useEffect: mountEffect,
-  useTransition: mountTransition
+  useTransition: mountTransition,
+  useRef: mountRef
 };
 
 const HooksDispatcherOnUpdate: Dispatcher = {
   useState: updateState,
   useEffect: updateEffect,
-  useTransition: updateTransition
+  useTransition: updateTransition,
+  useRef: updateRef
 };
 
+// #region useEffect
 /** 挂载时使用的 useEffect */
 function mountEffect(create: EffectCallback | void, deps: EffectDeps | void) {
   // 找到当前 useEffect 对应的 hook 数据
@@ -184,7 +187,9 @@ function updateEffect(create: EffectCallback | void, deps: EffectDeps | void) {
     hook.memoizedState = pushEffect(Passive | HookHasEffect, create, destroy, nextDeps);
   }
 }
+// #endregion
 
+// #region useState
 /** 挂载时使用的 useState */
 function mountState<State>(initialState: (() => State) | State): [State, Dispatch<State>] {
   // 找到当前 useState 对应的 hook 数据
@@ -209,38 +214,6 @@ function mountState<State>(initialState: (() => State) | State): [State, Dispatc
   queue.dispatch = dispatch;
 
   return [memoizedState as State, dispatch];
-}
-
-function mountTransition(): [boolean, (callback: () => void) => void] {
-  const [isPending, setPending] = mountState(false);
-  const hook = mountWorkInProgressHook();
-
-  const start = startTransition.bind(null, setPending);
-  hook.memoizedState = start;
-
-  return [isPending, start];
-}
-
-function updateTransition(): [boolean, (callback: () => void) => void] {
-  const [isPending] = updateState();
-  const hook = updateWorkInProgressHook();
-
-  const start = hook.memoizedState;
-  hook.memoizedState = start;
-
-  return [isPending as boolean, start];
-}
-
-function startTransition(setPending: Dispatch<boolean>, callback: () => void) {
-  // 先触发高优先级更新
-  setPending(true);
-  const prevTransition = currentBatchConfig.transition;
-  currentBatchConfig.transition = 1;
-
-  callback();
-  setPending(false);
-
-  currentBatchConfig.transition = prevTransition;
 }
 
 /** 更新时使用的 useState */
@@ -286,6 +259,55 @@ function dispatchSetState<State>(fiber: FiberNode, updateQueue: UpdateQueue<Stat
   enqueueUpdate<State>(updateQueue, update);
   scheduleUpdateOnFiber(fiber, lane);
 }
+// #endregion
+
+// #region useTransition
+function mountTransition(): [boolean, (callback: () => void) => void] {
+  const [isPending, setPending] = mountState(false);
+  const hook = mountWorkInProgressHook();
+
+  const start = startTransition.bind(null, setPending);
+  hook.memoizedState = start;
+
+  return [isPending, start];
+}
+
+function updateTransition(): [boolean, (callback: () => void) => void] {
+  const [isPending] = updateState();
+  const hook = updateWorkInProgressHook();
+
+  const start = hook.memoizedState;
+  hook.memoizedState = start;
+
+  return [isPending as boolean, start];
+}
+
+function startTransition(setPending: Dispatch<boolean>, callback: () => void) {
+  // 先触发高优先级更新
+  setPending(true);
+  const prevTransition = currentBatchConfig.transition;
+  currentBatchConfig.transition = 1;
+
+  callback();
+  setPending(false);
+
+  currentBatchConfig.transition = prevTransition;
+}
+// #endregion
+
+// #region useRef
+function mountRef<T>(initialValue: T): { current: T } {
+  const hook = mountWorkInProgressHook();
+  const ref = { current: initialValue };
+  hook.memoizedState = ref;
+  return ref;
+}
+
+function updateRef<T>(_initialValue: T): { current: T } {
+  const hook = updateWorkInProgressHook();
+  return hook.memoizedState;
+}
+// #endregion
 
 /** mount 时，获取到当前 hook 的数据 */
 function mountWorkInProgressHook(): Hook {

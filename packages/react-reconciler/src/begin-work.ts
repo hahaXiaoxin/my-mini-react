@@ -5,6 +5,7 @@ import { Fragment, FunctionComponent, HostComponent, HostRoot, HostText } from '
 import { mountChildFibers, reconcileChildFibers } from './child-fibers';
 import { renderWithHook } from './fiber-hooks';
 import { Lane } from './fiber-lanes';
+import { Ref } from './fiber-flags';
 
 // 递归中的“递”
 export const beginWork = (wip: FiberNode, renderLane: Lane) => {
@@ -16,7 +17,7 @@ export const beginWork = (wip: FiberNode, renderLane: Lane) => {
     case HostText:
       return null;
     case HostComponent:
-      return updateHostComponent(wip);
+      return updateHostComponent(wip, renderLane);
     case FunctionComponent:
       return updateFunctionComponent(wip, renderLane);
     case Fragment:
@@ -58,8 +59,9 @@ function updateHostRoot(wip: FiberNode, renderLane: Lane) {
   return wip.child;
 }
 
-function updateHostComponent(wip: FiberNode) {
+function updateHostComponent(wip: FiberNode, renderLane: Lane) {
   const nextProps = wip.pendingProps;
+  markRef(wip.alternate, wip);
   reconcileChildren(wip, nextProps.children);
   return wip.child;
 }
@@ -74,5 +76,13 @@ function reconcileChildren(wip: FiberNode, children: ReactElement) {
   // 说明此时是 mount 流程
   else {
     wip.child = mountChildFibers(wip, null, children);
+  }
+}
+
+function markRef(current: FiberNode | null, workInProgress: FiberNode) {
+  const ref = workInProgress.ref;
+
+  if ((current === null && ref !== null) || (current !== null && current.ref !== ref)) {
+    workInProgress.flags |= Ref;
   }
 }
