@@ -1,10 +1,11 @@
 import { Key, Props, ReactElement, Ref } from 'shared/react-types';
-import { Fragment, FunctionComponent, HostComponent, WorkTag } from './work-tags';
+import { ContextProvider, Fragment, FunctionComponent, HostComponent, WorkTag } from './work-tags';
 import { Flags, NoFlags } from './fiber-flags';
 import { Container } from 'host-config';
 import { Lane, Lanes, NoLane, NoLanes } from './fiber-lanes';
 import { Effect } from './fiber-hooks';
 import { CallbackNode } from 'scheduler';
+import { REACT_PROVIDER_TYPE } from 'shared/react-symbols';
 
 export class FiberNode {
   public type: any;
@@ -180,6 +181,8 @@ export function createFiberFromElement(element: ReactElement): FiberNode {
 
   if (typeof type === 'string') {
     fiberTag = HostComponent;
+  } else if (typeof type === 'object' && type.$$typeof === REACT_PROVIDER_TYPE) {
+    fiberTag = ContextProvider;
   } else if (typeof type !== 'function' && __DEV__) {
     console.warn('未定义的type', element);
   }

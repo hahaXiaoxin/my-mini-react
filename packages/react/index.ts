@@ -3,6 +3,8 @@ import currentDispatcher from './src/current-dispatcher';
 import currentBatchConfig from './src/current-batch-config';
 import { Dispatcher, resolveDispatcher } from './src/current-dispatcher';
 // React
+export { REACT_FRAGMENT_TYPE as Fragment } from 'shared/react-symbols';
+export { createContext } from './src/context';
 
 /**
  * 实现了不同阶段调用不同的 hook
@@ -25,6 +27,11 @@ export const useTransition: Dispatcher['useTransition'] = () => {
 export const useRef: Dispatcher['useRef'] = (initialValue) => {
   const dispatcher = resolveDispatcher();
   return dispatcher.useRef(initialValue);
+};
+
+export const useContext: Dispatcher['useContext'] = (context) => {
+  const dispatcher = resolveDispatcher();
+  return dispatcher.useContext(context);
 };
 
 /** 内部数据共享层 */

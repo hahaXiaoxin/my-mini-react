@@ -1,7 +1,9 @@
 import { appendInitialChild, Container, createInstance, createTextInstance, Instance } from 'host-config';
 import { FiberNode } from './fiber';
-import { Fragment, FunctionComponent, HostComponent, HostRoot, HostText } from './work-tags';
+import { ContextProvider, Fragment, FunctionComponent, HostComponent, HostRoot, HostText } from './work-tags';
 import { NoFlags, Ref, Update } from './fiber-flags';
+import { popProvider } from './fiber-context';
+import { ReactProviderType } from 'shared/react-types';
 
 /** 标记表明需要更新 */
 function markUpdate(fiber: FiberNode) {
@@ -53,12 +55,18 @@ export const completeWork = (wip: FiberNode) => {
       }
 
       bubbleProperties(wip);
-      break;
+      return null;
     case HostRoot:
     case FunctionComponent:
     case Fragment:
       bubbleProperties(wip);
-      break;
+      return null;
+    case ContextProvider: {
+      const context = (wip.type as ReactProviderType<any>)._context;
+      popProvider(context);
+      bubbleProperties(wip);
+      return null;
+    }
     default:
       if (__DEV__) {
         console.warn('未处理的 completeWork 情况', wip);

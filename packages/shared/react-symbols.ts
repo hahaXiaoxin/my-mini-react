@@ -12,3 +12,13 @@ export const REACT_ELEMENT_TYPE = supportSymbol ? Symbol.for('react.element') : 
  * 用于标记某个对象为 ReactFragment
  */
 export const REACT_FRAGMENT_TYPE = supportSymbol ? Symbol.for('react.fragment') : 0xeacb;
+
+/**
+ * 用于标记某个对象为 ReactContext
+ */
+export const REACT_CONTEXT_TYPE = supportSymbol ? Symbol.for('react.context') : 0xeacc;
+
+/**
+ * 用于标记某个对象为 ReactProvider
+ */
+export const REACT_PROVIDER_TYPE = supportSymbol ? Symbol.for('react.provider') : 0xeac2;

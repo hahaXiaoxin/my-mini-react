@@ -13,6 +13,7 @@
     "demo:fc": "vite serve demo-vite/test-fc --config scripts/vite/vite.config.js --force",
     "demo:transition": "vite serve demo-vite/transition --config scripts/vite/vite.config.js --force",
     "demo:ref": "vite serve demo-vite/ref --config scripts/vite/vite.config.js --force",
+    "demo:context": "vite serve demo-vite/context --config scripts/vite/vite.config.js --force",
     "test": "jest --config scripts/jest/jest.config.js"
   },
   "keywords": [],

@@ -3,7 +3,7 @@ import { FiberNode } from './fiber';
 import { Dispatcher, Dispatch } from 'react/src/current-dispatcher';
 import currentBatchConfig from 'react/src/current-batch-config';
 import { createUpdate, createUpdateQueue, enqueueUpdate, processUpdateQueue, Update, UpdateQueue } from './update-queue';
-import { Action } from 'shared/react-types';
+import { Action, ReactContext } from 'shared/react-types';
 import { scheduleUpdateOnFiber } from './work-loop';
 import { Lane, NoLane, requestUpdateLane } from './fiber-lanes';
 import { Flags, PassiveEffect } from './fiber-flags';
@@ -83,14 +83,16 @@ const HooksDispatcherOnMount: Dispatcher = {
   useState: mountState,
   useEffect: mountEffect,
   useTransition: mountTransition,
-  useRef: mountRef
+  useRef: mountRef,
+  useContext: readContext
 };
 
 const HooksDispatcherOnUpdate: Dispatcher = {
   useState: updateState,
   useEffect: updateEffect,
   useTransition: updateTransition,
-  useRef: updateRef
+  useRef: updateRef,
+  useContext: readContext
 };
 
 // #region useEffect
@@ -309,6 +311,19 @@ function updateRef<T>(_initialValue: T): { current: T } {
 }
 // #endregion
 
+// #region useContext
+function readContext<T>(context: ReactContext<T>): T {
+  const consumer = currentlyRenderingFiber;
+  if (consumer === null) {
+    throw new Error('请在函数组件内调用 useContext');
+  }
+
+  const value = context._currentValue;
+
+  return value;
+}
+
+// #endregion
 /** mount 时，获取到当前 hook 的数据 */
 function mountWorkInProgressHook(): Hook {
   const hook: Hook = {
