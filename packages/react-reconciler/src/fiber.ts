@@ -1,12 +1,16 @@
-import { Key, Props, ReactElement, Ref } from 'shared/react-types';
-import { ContextProvider, Fragment, FunctionComponent, HostComponent, WorkTag } from './work-tags';
+import { Key, Props, ReactElement, Ref, Wakeable } from 'shared/react-types';
+import { ContextProvider, Fragment, FunctionComponent, HostComponent, OffscreenComponent, SuspenseComponent, WorkTag } from './work-tags';
 import { Flags, NoFlags } from './fiber-flags';
 import { Container } from 'host-config';
 import { Lane, Lanes, NoLane, NoLanes } from './fiber-lanes';
 import { Effect } from './fiber-hooks';
 import { CallbackNode } from 'scheduler';
-import { REACT_PROVIDER_TYPE } from 'shared/react-symbols';
+import { REACT_PROVIDER_TYPE, REACT_SUSPENSE_TYPE } from 'shared/react-symbols';
 
+export interface OffscreenProps {
+  mode: 'visible' | 'hidden';
+  children: any;
+}
 export class FiberNode {
   public type: any;
 
@@ -121,12 +125,21 @@ export class FiberRootNode {
   callbackNode: CallbackNode | null;
   callbackPriority: Lane;
 
+  // WeakMap{promise: Set<Lane>}
+  pingCache: WeakMap<Wakeable<any>, Set<Lane>> | null;
+  // 当前 root 所有被挂起的更新
+  suspendedLanes: Lanes;
+  // 当前 root 所有被挂起的更新中执行了 ping 的更新
+  pingedLanes: Lanes;
+
   constructor(container: Container, hostRootFiber: FiberNode) {
     this.container = container;
     this.current = hostRootFiber;
     hostRootFiber.stateNode = this;
     this.finishedWork = null;
     this.pendingLanes = NoLanes;
+    this.suspendedLanes = NoLanes;
+    this.pingedLanes = NoLanes;
     this.finishedLane = NoLane;
 
     this.callbackNode = null;
@@ -136,6 +149,8 @@ export class FiberRootNode {
       unmount: [],
       update: []
     };
+
+    this.pingCache = null;
   }
 }
 
@@ -183,6 +198,8 @@ export function createFiberFromElement(element: ReactElement): FiberNode {
     fiberTag = HostComponent;
   } else if (typeof type === 'object' && type.$$typeof === REACT_PROVIDER_TYPE) {
     fiberTag = ContextProvider;
+  } else if (type === REACT_SUSPENSE_TYPE) {
+    fiberTag = SuspenseComponent;
   } else if (typeof type !== 'function' && __DEV__) {
     console.warn('未定义的type', element);
   }
@@ -195,8 +212,13 @@ export function createFiberFromElement(element: ReactElement): FiberNode {
   return fiber;
 }
 
-export function createFiberFromFragment(elements: any[], key: Key): FiberNode {
+export function createFiberFromFragment(elements: any[], key: any): FiberNode {
   const fiber = new FiberNode(Fragment, elements, key);
 
+  return fiber;
+}
+
+export function createFiberFromOffscreen(pendingProps: OffscreenProps): FiberNode {
+  const fiber = new FiberNode(OffscreenComponent, pendingProps, null);
   return fiber;
 }

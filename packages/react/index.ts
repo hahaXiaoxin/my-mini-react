@@ -2,8 +2,10 @@ import { jsx, isValidElement as isValidElementFn } from './src/jsx';
 import currentDispatcher from './src/current-dispatcher';
 import currentBatchConfig from './src/current-batch-config';
 import { Dispatcher, resolveDispatcher } from './src/current-dispatcher';
+import { Usable } from 'shared/react-types';
+
 // React
-export { REACT_FRAGMENT_TYPE as Fragment } from 'shared/react-symbols';
+export { REACT_FRAGMENT_TYPE as Fragment, REACT_SUSPENSE_TYPE as Suspense } from 'shared/react-symbols';
 export { createContext } from './src/context';
 
 /**
@@ -32,6 +34,11 @@ export const useRef: Dispatcher['useRef'] = (initialValue) => {
 export const useContext: Dispatcher['useContext'] = (context) => {
   const dispatcher = resolveDispatcher();
   return dispatcher.useContext(context);
+};
+
+export const use: Dispatcher['use'] = <T>(usable: Usable<T>) => {
+  const dispatcher = resolveDispatcher();
+  return dispatcher.use(usable);
 };
 
 /** 内部数据共享层 */

@@ -12,6 +12,11 @@ export const ChildDeletion = 0b0000100;
 /** 表示当前 fiber 存在需要执行相关 effect 的情况 */
 export const PassiveEffect = 0b0001000;
 export const Ref = 0b0010000;
+export const Visibility = 0b0100000;
+export const DidCapture = 0b1000000;
+
+/** render 阶段捕获到一些东西 */
+export const ShouldCapture = 0b010000000000;
 
 /** commit 阶段需要执行的 flag */
 export const MutationMask = Placement | Update | ChildDeletion | Ref;

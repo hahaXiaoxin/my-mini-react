@@ -22,3 +22,8 @@ export const REACT_CONTEXT_TYPE = supportSymbol ? Symbol.for('react.context') : 
  * 用于标记某个对象为 ReactProvider
  */
 export const REACT_PROVIDER_TYPE = supportSymbol ? Symbol.for('react.provider') : 0xeac2;
+
+/**
+ * 用于标记某个对象为 ReactProvider
+ */
+export const REACT_SUSPENSE_TYPE = supportSymbol ? Symbol.for('react.suspense') : 0xeac3;

@@ -1,7 +1,18 @@
-import { appendChildToContainer, commitUpdate, Container, insertChildToContainer, Instance, removeChild } from 'host-config';
+import {
+  appendChildToContainer,
+  commitUpdate,
+  Container,
+  hideInstance,
+  hideTextInstance,
+  insertChildToContainer,
+  Instance,
+  removeChild,
+  unhideInstance,
+  unhideTextInstance
+} from 'host-config';
 import { FiberNode, FiberRootNode, PendingPassiveEffect } from './fiber';
-import { Placement, MutationMask, NoFlags, Update, ChildDeletion, PassiveEffect, Flags, Ref, LayoutMask } from './fiber-flags';
-import { FunctionComponent, HostComponent, HostRoot, HostText } from './work-tags';
+import { Placement, MutationMask, NoFlags, Update, ChildDeletion, PassiveEffect, Flags, Ref, LayoutMask, Visibility } from './fiber-flags';
+import { FunctionComponent, HostComponent, HostRoot, HostText, OffscreenComponent } from './work-tags';
 import { Effect, FCUpdateQueue } from './fiber-hooks';
 import { HookHasEffect } from './hook-effect-tags';
 
@@ -74,6 +85,73 @@ function commitMutationEffectsOnFiber(finishedWork: FiberNode, root: FiberRootNo
 
   if ((flags & Ref) !== NoFlags && tag === HostComponent) {
     safelyDetachRef(finishedWork);
+  }
+
+  if ((flags & Visibility) !== NoFlags && tag === OffscreenComponent) {
+    const isHidden = finishedWork.pendingProps.mode === 'hidden';
+    hideOrUnhideAllChildren(finishedWork, isHidden);
+    finishedWork.flags &= ~Visibility;
+  }
+}
+
+function hideOrUnhideAllChildren(finishedWork: FiberNode, isHidden: boolean) {
+  findHostSubtreeRoot(finishedWork, (hostSubtreeRoot) => {
+    const instance = hostSubtreeRoot.stateNode;
+
+    if (hostSubtreeRoot.tag === HostComponent) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+      isHidden ? hideInstance(instance) : unhideInstance(instance);
+    } else if (hostSubtreeRoot.tag === HostText) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+      isHidden ? hideTextInstance(instance) : unhideTextInstance(instance, hostSubtreeRoot.memoizdedProps.context);
+    }
+  });
+}
+
+function findHostSubtreeRoot(finishedWork: FiberNode, callback: (hostSubtreeRoot: FiberNode) => void) {
+  let node = finishedWork;
+  let hostSubtreeRoot = null;
+
+  while (true) {
+    if (node.tag === HostComponent) {
+      if (hostSubtreeRoot === null) {
+        hostSubtreeRoot = node;
+        callback(hostSubtreeRoot);
+      }
+    } else if (node.tag === HostText) {
+      if (hostSubtreeRoot === null) {
+        callback(node);
+      }
+    } else if (node.tag === OffscreenComponent && node.pendingProps.mode === 'hidden' && node !== finishedWork) {
+      // 嵌套 Suspense 的话无需处理
+    } else if (node.child !== null) {
+      node.child.return = node;
+      node = node.child;
+      continue;
+    }
+
+    if (node === finishedWork) {
+      return;
+    }
+
+    while (node.sibling === null) {
+      if (node.return === null || node.return === finishedWork) {
+        return;
+      }
+
+      if (hostSubtreeRoot === node) {
+        hostSubtreeRoot = null;
+      }
+
+      node = node.return;
+    }
+
+    if (hostSubtreeRoot === node) {
+      hostSubtreeRoot = null;
+    }
+
+    node.sibling.return = node.return;
+    node = node.sibling;
   }
 }
 

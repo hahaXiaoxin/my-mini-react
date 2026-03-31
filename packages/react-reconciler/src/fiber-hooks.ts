@@ -3,11 +3,13 @@ import { FiberNode } from './fiber';
 import { Dispatcher, Dispatch } from 'react/src/current-dispatcher';
 import currentBatchConfig from 'react/src/current-batch-config';
 import { createUpdate, createUpdateQueue, enqueueUpdate, processUpdateQueue, Update, UpdateQueue } from './update-queue';
-import { Action, ReactContext } from 'shared/react-types';
+import { Action, ReactContext, Thenable, Usable } from 'shared/react-types';
 import { scheduleUpdateOnFiber } from './work-loop';
 import { Lane, NoLane, requestUpdateLane } from './fiber-lanes';
 import { Flags, PassiveEffect } from './fiber-flags';
 import { HookHasEffect, Passive } from './hook-effect-tags';
+import { REACT_CONTEXT_TYPE } from 'shared/react-symbols';
+import { trackUsedThenable } from './thenable';
 
 /** 用于指向当前正在渲染的 FiberNode */
 let currentlyRenderingFiber: FiberNode | null = null;
@@ -84,7 +86,8 @@ const HooksDispatcherOnMount: Dispatcher = {
   useEffect: mountEffect,
   useTransition: mountTransition,
   useRef: mountRef,
-  useContext: readContext
+  useContext: readContext,
+  use
 };
 
 const HooksDispatcherOnUpdate: Dispatcher = {
@@ -92,7 +95,8 @@ const HooksDispatcherOnUpdate: Dispatcher = {
   useEffect: updateEffect,
   useTransition: updateTransition,
   useRef: updateRef,
-  useContext: readContext
+  useContext: readContext,
+  use
 };
 
 // #region useEffect
@@ -324,6 +328,7 @@ function readContext<T>(context: ReactContext<T>): T {
 }
 
 // #endregion
+
 /** mount 时，获取到当前 hook 的数据 */
 function mountWorkInProgressHook(): Hook {
   const hook: Hook = {
@@ -401,4 +406,26 @@ function updateWorkInProgressHook(): Hook {
   workInProgressHook = newHook;
 
   return workInProgressHook;
+}
+
+function use<T>(usable: Usable<T>): T {
+  if (usable !== null && typeof usable === 'object') {
+    if (typeof (usable as Thenable<T>).then === 'function') {
+      // thenable
+      const thenable = usable as Thenable<T>;
+
+      return trackUsedThenable(thenable);
+    } else if ((usable as ReactContext<T>).$$typeof === REACT_CONTEXT_TYPE) {
+      const context = usable as ReactContext<T>;
+      return readContext(context);
+    }
+  }
+
+  throw new Error('不支持的 use 参数' + usable);
+}
+
+export function resetHooksOnUnwind(): void {
+  currentlyRenderingFiber = null;
+  workInProgressHook = null;
+  currentHook = null;
 }

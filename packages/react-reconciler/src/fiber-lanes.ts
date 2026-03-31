@@ -36,7 +36,7 @@ export function requestUpdateLane() {
   return lane;
 }
 
-export function getHighestPriorityLane(lanes: Lanes): Lane {
+function getHighestPriorityLane(lanes: Lanes): Lane {
   return lanes & -lanes;
 }
 
@@ -46,6 +46,9 @@ export function isSubsetOfLanes(set: Lanes, subset: Lane) {
 
 export function markRootFinished(root: FiberRootNode, lane: Lane) {
   root.pendingLanes &= ~lane;
+
+  root.suspendedLanes = NoLanes;
+  root.pingedLanes = NoLanes;
 }
 
 export function laneToSchedulerPriority(lanes: Lanes) {
@@ -80,4 +83,49 @@ function schedulerPriorityToLane(schedulerPriority: number): Lane {
   }
 
   return NoLane;
+}
+
+/**
+ * 数据还未回来时，将某个 lane 标记为挂起
+ * 该 lane 将不会被调度
+ */
+export function markRootSuspended(root: FiberRootNode, suspendedLanes: Lanes) {
+  root.suspendedLanes |= suspendedLanes;
+  root.pingedLanes &= ~suspendedLanes;
+}
+
+/**
+ * 当被 ping 了之后，说明某个数据回来了，将该 lane 标记为 ping
+ */
+export function markRootPinged(root: FiberRootNode, pingedLanes: Lanes) {
+  root.pingedLanes |= pingedLanes & root.suspendedLanes;
+}
+
+/**
+ * 调度逻辑：
+ * 1. 优先调度不在 suspendedLanes 的 lane
+ * 2. 其次调度 pingedLanes 中的 lane，数据回来了，可以渲染了
+ */
+export function getNextLane(root: FiberRootNode): Lane {
+  const pendingLanes = root.pendingLanes;
+
+  if (pendingLanes === NoLanes) {
+    return NoLane;
+  }
+
+  let nextLane = NoLane;
+
+  const suspendedLanes = pendingLanes & ~root.suspendedLanes;
+
+  if (suspendedLanes !== NoLanes) {
+    nextLane = getHighestPriorityLane(suspendedLanes);
+  } else {
+    const pingedLanes = pendingLanes & root.pingedLanes;
+
+    if (pingedLanes !== NoLanes) {
+      nextLane = getHighestPriorityLane(pingedLanes);
+    }
+  }
+
+  return nextLane;
 }

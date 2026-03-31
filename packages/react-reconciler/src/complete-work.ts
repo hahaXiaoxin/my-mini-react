@@ -1,9 +1,10 @@
 import { appendInitialChild, Container, createInstance, createTextInstance, Instance } from 'host-config';
 import { FiberNode } from './fiber';
-import { ContextProvider, Fragment, FunctionComponent, HostComponent, HostRoot, HostText } from './work-tags';
-import { NoFlags, Ref, Update } from './fiber-flags';
+import { ContextProvider, Fragment, FunctionComponent, HostComponent, HostRoot, HostText, OffscreenComponent, SuspenseComponent } from './work-tags';
+import { NoFlags, Ref, Update, Visibility } from './fiber-flags';
 import { popProvider } from './fiber-context';
 import { ReactProviderType } from 'shared/react-types';
+import { popSuspenseHandler } from './suspense-context';
 
 /** 标记表明需要更新 */
 function markUpdate(fiber: FiberNode) {
@@ -59,11 +60,32 @@ export const completeWork = (wip: FiberNode) => {
     case HostRoot:
     case FunctionComponent:
     case Fragment:
+    case OffscreenComponent:
       bubbleProperties(wip);
       return null;
     case ContextProvider: {
       const context = (wip.type as ReactProviderType<any>)._context;
       popProvider(context);
+      bubbleProperties(wip);
+      return null;
+    }
+    case SuspenseComponent: {
+      popSuspenseHandler();
+      const offscreenFiber = wip.child as FiberNode;
+      const isHidden = offscreenFiber.pendingProps.mode === 'hidden';
+      const currentOffscreenFiber = offscreenFiber.alternate;
+
+      if (currentOffscreenFiber !== null) {
+        // update
+        const wasHidden = currentOffscreenFiber.pendingProps.mode === 'hidden';
+        if (isHidden !== wasHidden) {
+          offscreenFiber.flags |= Visibility;
+          bubbleProperties(offscreenFiber);
+        }
+      } else if (isHidden) {
+        offscreenFiber.flags |= Visibility;
+        bubbleProperties(offscreenFiber);
+      }
       bubbleProperties(wip);
       return null;
     }
