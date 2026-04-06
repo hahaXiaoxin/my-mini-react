@@ -47,11 +47,11 @@ export const appendChildToContainer = appendInitialChild;
 export function commitUpdate(fiber: FiberNode) {
   switch (fiber.tag) {
     case HostText: {
-      const text = fiber.memoizdedProps.content;
+      const text = fiber.memoizedProps.content;
       return commitTextUpdate(fiber.stateNode, text);
     }
     case HostComponent:
-      return updateFiberProps(fiber.stateNode, fiber.memoizdedProps);
+      return updateFiberProps(fiber.stateNode, fiber.memoizedProps);
     default:
       if (__DEV__) {
         console.warn('未处理的 Update 类型', fiber);

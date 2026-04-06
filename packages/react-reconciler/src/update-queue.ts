@@ -1,11 +1,14 @@
 import { Dispatch } from 'react/src/current-dispatcher';
 import { Action } from 'shared/react-types';
-import { isSubsetOfLanes, Lane, NoLane } from './fiber-lanes';
+import { isSubsetOfLanes, Lane, mergeLanes, NoLane } from './fiber-lanes';
+import { FiberNode } from './fiber';
 
 export interface Update<State> {
   action: Action<State>;
   lane: Lane;
   next: Update<any> | null;
+  hasEagerState: boolean;
+  eagerState: State | null;
 }
 
 export interface UpdateQueue<State> {
@@ -16,11 +19,18 @@ export interface UpdateQueue<State> {
 }
 
 /** 创建 Update 实例 */
-export function createUpdate<State>(action: Action<State>, lane: Lane): Update<State> {
+export function createUpdate<State>(
+  action: Action<State>,
+  lane: Lane,
+  hasEagerState: boolean = false,
+  eagerState: State | null = null
+): Update<State> {
   return {
     action,
     lane,
-    next: null
+    next: null,
+    hasEagerState,
+    eagerState
   };
 }
 
@@ -41,7 +51,7 @@ export const createUpdateQueue = <State>() => {
  * 最终所有的 update 会形成一个环（不知道意义何在）
  * 1. 这样 pending.next 就会指向最早插入的一个 update（有点高级，环状链表的新用法，头尾指针二合一了属于是）
  * */
-export function enqueueUpdate<State>(updateQueue: UpdateQueue<State>, update: Update<State>) {
+export function enqueueUpdate<State>(updateQueue: UpdateQueue<State>, update: Update<State>, fiber: FiberNode, lane: Lane) {
   const pending = updateQueue.shared.pending;
 
   if (pending === null) {
@@ -51,13 +61,21 @@ export function enqueueUpdate<State>(updateQueue: UpdateQueue<State>, update: Up
     pending.next = update;
   }
   updateQueue.shared.pending = update;
+
+  fiber.lanes = mergeLanes(fiber.lanes, lane);
+  const alternate = fiber.alternate;
+  if (alternate !== null) {
+    // todo：这里为什么要给 alternate.lanes 赋值
+    alternate.lanes = mergeLanes(alternate.lanes, lane);
+  }
 }
 
 /** 消费 updateQueue */
 export function processUpdateQueue<State>(
   baseState: State,
   pendingUpdate: Update<State> | null,
-  renderLane: Lane
+  renderLane: Lane,
+  onSkipUpdate?: (update: Update<State>) => void
 ): {
   memoizedState: State;
   baseState: State;
@@ -90,6 +108,9 @@ export function processUpdateQueue<State>(
       if (!isSubsetOfLanes(renderLane, updateLane)) {
         // 优先级不够，被跳过
         const clone = createUpdate(pending.action, pending.lane);
+
+        onSkipUpdate?.(clone);
+
         // 是不是第一个被跳过的
         if (newBaseQueueFirst === null) {
           newBaseQueueFirst = clone;
@@ -108,11 +129,10 @@ export function processUpdateQueue<State>(
         }
 
         const action = pendingUpdate.action;
-
-        if (action instanceof Function) {
-          newState = action(baseState);
+        if (pending.hasEagerState) {
+          newState = pending.eagerState;
         } else {
-          newState = action;
+          newState = basicStateReducer(baseState, action);
         }
       }
 
@@ -133,4 +153,12 @@ export function processUpdateQueue<State>(
   }
 
   return result;
+}
+
+export function basicStateReducer<State>(state: State, action: Action<State>): State {
+  if (action instanceof Function) {
+    return action(state);
+  } else {
+    return action;
+  }
 }

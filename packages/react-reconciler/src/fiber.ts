@@ -1,16 +1,32 @@
 import { Key, Props, ReactElement, Ref, Wakeable } from 'shared/react-types';
-import { ContextProvider, Fragment, FunctionComponent, HostComponent, OffscreenComponent, SuspenseComponent, WorkTag } from './work-tags';
+import {
+  ContextProvider,
+  Fragment,
+  FunctionComponent,
+  HostComponent,
+  MemoComponent,
+  OffscreenComponent,
+  SuspenseComponent,
+  WorkTag
+} from './work-tags';
 import { Flags, NoFlags } from './fiber-flags';
 import { Container } from 'host-config';
 import { Lane, Lanes, NoLane, NoLanes } from './fiber-lanes';
 import { Effect } from './fiber-hooks';
 import { CallbackNode } from 'scheduler';
-import { REACT_PROVIDER_TYPE, REACT_SUSPENSE_TYPE } from 'shared/react-symbols';
+import { REACT_MEMO_TYPE, REACT_PROVIDER_TYPE, REACT_SUSPENSE_TYPE } from 'shared/react-symbols';
+import { ContextItem } from './fiber-context';
 
 export interface OffscreenProps {
   mode: 'visible' | 'hidden';
   children: any;
 }
+
+interface FiberDependencies<Value> {
+  firstContext: ContextItem<Value> | null;
+  lanes: Lanes;
+}
+
 export class FiberNode {
   public type: any;
 
@@ -26,7 +42,7 @@ export class FiberNode {
    *
    * 可以是旧的状态值，当接收一个 action，就会变成新值然后存在 memoizdedProps 之中
    * */
-  public memoizdedProps: Props | null;
+  public memoizedProps: Props | null;
   /**
    * 工作结束后确定的 state
    *
@@ -53,17 +69,25 @@ export class FiberNode {
   /** 双缓冲机制中指向另一颗 Fiber 树的引用 */
   public alternate: FiberNode | null;
 
+  /** 记录当前 FiberNode 需要执行的副作用 */
   public flags: Flags;
 
-  public lanes: Lanes;
-  public childLanes: Lanes;
-
+  /** 记录其子孙 FiberNode 需要执行的副作用 */
   public subtreeFlags: Flags;
+
+  /** 记录当前 FiberNode 存在哪些更新，用于 bailout 性能优化策略 */
+  public lanes: Lanes;
+
+  /** 记录当前 FiberNode 子孙 FiberNode 存在哪些更新 */
+  public childLanes: Lanes;
 
   public updateQueue: unknown;
 
   /** 指向需要删除的子 FiberNode*/
   public deletions: FiberNode[] | null;
+
+  /** 用于记录当前 fiber 使用了哪些 context */
+  dependencies: FiberDependencies<any> | null;
 
   public constructor(tag: WorkTag, pendingProps: Props, key: Key) {
     // 实例 本身所需要的属性
@@ -84,7 +108,7 @@ export class FiberNode {
 
     // 作为工作单元
     this.pendingProps = pendingProps;
-    this.memoizdedProps = null;
+    this.memoizedProps = null;
     this.memoizedState = null;
     this.updateQueue = null;
 
@@ -96,6 +120,8 @@ export class FiberNode {
 
     this.lanes = NoLanes;
     this.childLanes = NoLanes;
+
+    this.dependencies = null;
   }
 }
 
@@ -180,11 +206,23 @@ export function createWorkInProgress(current: FiberNode, pendingProps: Props): F
   wip.type = current.type;
   wip.updateQueue = current.updateQueue;
   wip.child = current.child;
-  wip.memoizdedProps = current.memoizdedProps;
+  wip.memoizedProps = current.memoizedProps;
   wip.memoizedState = current.memoizedState;
   wip.ref = current.ref;
   wip.sibling = current.sibling;
   wip.return = current.return;
+
+  wip.lanes = current.lanes;
+  wip.childLanes = current.childLanes;
+
+  const currentDeps = current.dependencies;
+  wip.dependencies =
+    currentDeps === null
+      ? null
+      : {
+          lanes: currentDeps.lanes,
+          firstContext: currentDeps.firstContext
+        };
 
   return wip;
 }
@@ -196,8 +234,18 @@ export function createFiberFromElement(element: ReactElement): FiberNode {
 
   if (typeof type === 'string') {
     fiberTag = HostComponent;
-  } else if (typeof type === 'object' && type.$$typeof === REACT_PROVIDER_TYPE) {
-    fiberTag = ContextProvider;
+  } else if (typeof type === 'object') {
+    switch (type.$$typeof) {
+      case REACT_PROVIDER_TYPE:
+        fiberTag = ContextProvider;
+        break;
+      case REACT_MEMO_TYPE:
+        fiberTag = MemoComponent;
+        break;
+      default:
+        console.warn('[createFiberFromElement] 未定义的type类型');
+        break;
+    }
   } else if (type === REACT_SUSPENSE_TYPE) {
     fiberTag = SuspenseComponent;
   } else if (typeof type !== 'function' && __DEV__) {

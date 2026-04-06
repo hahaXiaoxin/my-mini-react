@@ -11,14 +11,29 @@ import {
   unhideTextInstance
 } from 'host-config';
 import { FiberNode, FiberRootNode, PendingPassiveEffect } from './fiber';
-import { Placement, MutationMask, NoFlags, Update, ChildDeletion, PassiveEffect, Flags, Ref, LayoutMask, Visibility } from './fiber-flags';
+import {
+  Placement,
+  MutationMask,
+  NoFlags,
+  Update,
+  ChildDeletion,
+  PassiveEffect,
+  Flags,
+  Ref,
+  LayoutMask,
+  Visibility
+} from './fiber-flags';
 import { FunctionComponent, HostComponent, HostRoot, HostText, OffscreenComponent } from './work-tags';
 import { Effect, FCUpdateQueue } from './fiber-hooks';
 import { HookHasEffect } from './hook-effect-tags';
 
 let nextEffect: FiberNode | null = null;
 
-export function commitEffects(phrase: 'mutation' | 'layout', mask: Flags, callback: (fiber: FiberNode, fiberRootNode: FiberRootNode) => void) {
+export function commitEffects(
+  phrase: 'mutation' | 'layout',
+  mask: Flags,
+  callback: (fiber: FiberNode, fiberRootNode: FiberRootNode) => void
+) {
   return (finishedWork: FiberNode, root: FiberRootNode) => {
     nextEffect = finishedWork;
 
@@ -103,7 +118,7 @@ function hideOrUnhideAllChildren(finishedWork: FiberNode, isHidden: boolean) {
       isHidden ? hideInstance(instance) : unhideInstance(instance);
     } else if (hostSubtreeRoot.tag === HostText) {
       // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-      isHidden ? hideTextInstance(instance) : unhideTextInstance(instance, hostSubtreeRoot.memoizdedProps.context);
+      isHidden ? hideTextInstance(instance) : unhideTextInstance(instance, hostSubtreeRoot.memoizedProps.context);
     }
   });
 }

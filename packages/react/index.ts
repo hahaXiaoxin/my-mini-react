@@ -7,7 +7,7 @@ import { Usable } from 'shared/react-types';
 // React
 export { REACT_FRAGMENT_TYPE as Fragment, REACT_SUSPENSE_TYPE as Suspense } from 'shared/react-symbols';
 export { createContext } from './src/context';
-
+export { memo } from './src/memo';
 /**
  * 实现了不同阶段调用不同的 hook
  */
@@ -39,6 +39,16 @@ export const useContext: Dispatcher['useContext'] = (context) => {
 export const use: Dispatcher['use'] = <T>(usable: Usable<T>) => {
   const dispatcher = resolveDispatcher();
   return dispatcher.use(usable);
+};
+
+export const useMemo: Dispatcher['useMemo'] = (nextCreate, deps) => {
+  const dispatcher = resolveDispatcher();
+  return dispatcher.useMemo(nextCreate, deps);
+};
+
+export const useCallback: Dispatcher['useCallback'] = (callback, deps) => {
+  const dispatcher = resolveDispatcher();
+  return dispatcher.useCallback(callback, deps);
 };
 
 /** 内部数据共享层 */

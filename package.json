@@ -15,6 +15,7 @@
     "demo:ref": "vite serve demo-vite/ref --config scripts/vite/vite.config.js --force",
     "demo:context": "vite serve demo-vite/context --config scripts/vite/vite.config.js --force",
     "demo:suspense-use": "vite serve demo-vite/suspense-use --config scripts/vite/vite.config.js --force",
+    "demo:performance": "vite serve demo-vite/performance --config scripts/vite/vite.config.js --force",
     "test": "jest --config scripts/jest/jest.config.js"
   },
   "keywords": [],

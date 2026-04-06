@@ -10,7 +10,16 @@ import {
 import { completeWork } from './complete-work';
 import { createWorkInProgress, FiberNode, FiberRootNode, PendingPassiveEffect } from './fiber';
 import { MutationMask, NoFlags, PassiveMask } from './fiber-flags';
-import { getNextLane, Lane, laneToSchedulerPriority, markRootFinished, markRootSuspended, mergeLanes, NoLane, SyncLane } from './fiber-lanes';
+import {
+  getNextLane,
+  Lane,
+  laneToSchedulerPriority,
+  markRootFinished,
+  markRootSuspended,
+  mergeLanes,
+  NoLane,
+  SyncLane
+} from './fiber-lanes';
 import { flushSyncCallbacks, scheduleSyncCallback } from './sync-task-queue';
 import { HostRoot } from './work-tags';
 import {
@@ -63,7 +72,7 @@ function prepareFreshStack(root: FiberRootNode, lane: Lane) {
 /** 在 Fiber 中进行调度更新 */
 export function scheduleUpdateOnFiber(fiber: FiberNode, lane: Lane) {
   // TODO 调度功能
-  const root = markUpdateFromFiberToRoot(fiber);
+  const root = markUpdateLaneFromFiberToRoot(fiber, lane);
   markRootUpdated(root, lane);
   ensureRootIsScheduled(root);
 }
@@ -121,11 +130,19 @@ export function markRootUpdated(root: FiberRootNode, lane: Lane) {
 }
 
 /** 从当前节点向根节点标记 */
-function markUpdateFromFiberToRoot(fiber: FiberNode) {
+function markUpdateLaneFromFiberToRoot(fiber: FiberNode, lane: Lane) {
   let node = fiber;
   let parent = node.return;
 
   while (parent !== null) {
+    parent.childLanes = mergeLanes(parent.childLanes, lane);
+    const alternate = parent.alternate;
+
+    // todo: 这里为什么要给 alternate 也标记 childLanes 呢
+    if (alternate !== null) {
+      alternate.childLanes = mergeLanes(alternate.childLanes, lane);
+    }
+
     node = parent;
     parent = node.return;
   }
@@ -442,7 +459,7 @@ function workLoopConcurrent() {
 /** 遍历子节点，向下递的过程就是beginWork */
 function performUnitOfWork(fiber: FiberNode) {
   const next = beginWork(fiber, wipRootRenderLane);
-  fiber.memoizdedProps = fiber.pendingProps;
+  fiber.memoizedProps = fiber.pendingProps;
 
   // todo：类型貌似有问题，undefined 不能赋值，那么提前处理一下这个路径
   if (next === undefined) return;

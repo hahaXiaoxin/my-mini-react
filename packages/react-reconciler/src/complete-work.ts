@@ -1,10 +1,21 @@
 import { appendInitialChild, Container, createInstance, createTextInstance, Instance } from 'host-config';
 import { FiberNode } from './fiber';
-import { ContextProvider, Fragment, FunctionComponent, HostComponent, HostRoot, HostText, OffscreenComponent, SuspenseComponent } from './work-tags';
+import {
+  ContextProvider,
+  Fragment,
+  FunctionComponent,
+  HostComponent,
+  HostRoot,
+  HostText,
+  MemoComponent,
+  OffscreenComponent,
+  SuspenseComponent
+} from './work-tags';
 import { NoFlags, Ref, Update, Visibility } from './fiber-flags';
 import { popProvider } from './fiber-context';
 import { ReactProviderType } from 'shared/react-types';
 import { popSuspenseHandler } from './suspense-context';
+import { mergeLanes, NoLanes } from './fiber-lanes';
 
 /** 标记表明需要更新 */
 function markUpdate(fiber: FiberNode) {
@@ -43,7 +54,7 @@ export const completeWork = (wip: FiberNode) => {
       // 1. 构建 DOM
       if (current !== null && wip.stateNode) {
         // update
-        const oldText = current.memoizdedProps?.content;
+        const oldText = current.memoizedProps?.content;
         const newText = newProps.content;
 
         if (oldText !== newText) {
@@ -61,6 +72,7 @@ export const completeWork = (wip: FiberNode) => {
     case FunctionComponent:
     case Fragment:
     case OffscreenComponent:
+    case MemoComponent:
       bubbleProperties(wip);
       return null;
     case ContextProvider: {
@@ -138,15 +150,20 @@ function appendAllChildren(parent: Container | Instance, wip: FiberNode) {
  */
 function bubbleProperties(wip: FiberNode) {
   let subtreeFlags = NoFlags;
+  let newChildLanes = NoLanes;
   let child = wip.child;
 
   // 这样某个节点的 subtreeFlags 就包含了所有后代节点的 flags
   while (child !== null) {
     subtreeFlags |= child.subtreeFlags;
     subtreeFlags |= child.flags;
+
+    newChildLanes = mergeLanes(newChildLanes, mergeLanes(child.lanes, child.childLanes));
+
     child.return = wip;
     child = child.sibling;
   }
 
   wip.subtreeFlags |= subtreeFlags;
+  wip.childLanes = newChildLanes;
 }

@@ -9,7 +9,8 @@ export type WorkTag =
   | typeof Fragment
   | typeof ContextProvider
   | typeof SuspenseComponent
-  | typeof OffscreenComponent;
+  | typeof OffscreenComponent
+  | typeof MemoComponent;
 
 /** 函数式组件 */
 export const FunctionComponent = 0;
@@ -32,3 +33,6 @@ export const ContextProvider = 8;
 /**	Suspense 组件 */
 export const SuspenseComponent = 13;
 export const OffscreenComponent = 14;
+
+/** memoComponent */
+export const MemoComponent = 15;
