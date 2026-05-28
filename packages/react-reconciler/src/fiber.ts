@@ -133,10 +133,17 @@ export interface PendingPassiveEffect {
 export class FiberRootNode {
   public container: Container;
 
-  /** 指向当前的 FiberNode */
+  /**
+   * 指向「当前已提交到宿主环境（屏幕）」的 Fiber 树根。
+   * 双缓冲机制中的「前台树」。在 commitRoot 的 mutation 阶段结束后被切换为新的 wip 树根。
+   */
   public current: FiberNode;
 
-  /** 指向已完成的 FiberNode */
+  /**
+   * 指向「render 阶段已构建完成、等待 commit」的 wip 树根。
+   * 在 renderRoot 完成时被赋值，在 commitRoot 开始时被重置为 null。
+   * 仅在 render 完成 → commit 开始 这个极短的"交接"窗口里非 null。
+   */
   public finishedWork: FiberNode | null;
 
   /** 所有未被消费的 Lanes  */

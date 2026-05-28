@@ -268,82 +268,52 @@ export function commitHookEffectListCreate(flags: Flags, lastEffect: Effect) {
   });
 }
 
-/**
- * 收集需要从 DOM 中删除的顶层 Host 节点
- *
- * 当删除 Fragment 或函数组件时，它们本身没有对应的 DOM 节点，
- * 真正需要删除的是它们的子 Host 节点。此函数用于收集这些顶层 Host 节点。
- *
- * @example
- * 删除以下 Fragment 时：
- * ```jsx
- * <>
- *   <div>              // 顶层 Host 1 ✅ 需要删除
- *     <span>child</span>  // 嵌套的 Host ❌ 不需要单独删除，删父节点时会一起删
- *   </div>
- *   <p>text</p>        // 顶层 Host 2 ✅ 需要删除（是 div 的兄弟节点）
- * </>
- * ```
- *
- * commitNestedComponent 会深度优先遍历整个子树，遇到每个 Host 节点都会调用此函数：
- * 1. 遇到 <div> → 数组为空，直接 push
- * 2. 遇到 <span> → 检查是否是 <div> 的兄弟？不是（是子节点），不添加
- * 3. 遇到 <p> → 检查是否是 <div> 的兄弟？是，添加
- *
- * 最终 childrenToDelete = [div, p]，然后分别删除这两个 DOM 节点
- *
- * @param childrenToDelete - 收集需要删除的顶层 Host 节点数组
- * @param unmountFiber - 当前遍历到的需要卸载的 fiber 节点
- */
-function recordHostChildrenToDelete(childrenToDelete: FiberNode[], unmountFiber: FiberNode) {
-  const lastOne = childrenToDelete[childrenToDelete.length - 1];
-
-  if (!lastOne) {
-    // 数组为空，说明这是第一个 host 节点，直接添加
-    childrenToDelete.push(unmountFiber);
-  } else {
-    // 数组不为空，需要检查当前节点是否是上一个节点的兄弟节点
-    // 只有兄弟节点才是同一层级的顶层 Host，需要单独删除
-    // 如果是子节点，删除父节点时会一并删除，无需单独处理
-    let node = lastOne.sibling;
-
-    while (node !== null) {
-      if (unmountFiber === node) {
-        childrenToDelete.push(node);
-      }
-      node = node.sibling;
-    }
-  }
-}
-
 /** commit 删除操作 */
 function commitDeletion(childToDelete: FiberNode, root: FiberRootNode) {
   // 收集需要删除的节点
   const rootChildrenToDelete: FiberNode[] = [];
+  // 当前所在的 host 子树根：进入时设置，离开时清空
+  // 用于判断当前 host 节点是不是顶层（不在已设置的 hostSubtreeRoot 子树内的 host 才是新顶层）
+  let hostSubtreeRoot: FiberNode | null = null;
 
   // 递归子树
-  commitNestedComponent(childToDelete, (unmountFiber) => {
-    switch (unmountFiber.tag) {
-      case HostComponent:
-        recordHostChildrenToDelete(rootChildrenToDelete, unmountFiber);
-        // 解绑 ref
-        safelyDetachRef(unmountFiber);
-        return;
-      case HostText:
-        recordHostChildrenToDelete(rootChildrenToDelete, unmountFiber);
-
-        return;
-      case FunctionComponent:
-        // useEffect unmount
-        commitPassiveEffect(unmountFiber, root, 'unmount');
-        return;
-      default:
-        if (__DEV__) {
-          console.warn('未处理的 unmount 类型', unmountFiber);
-        }
-        break;
+  commitNestedComponent(
+    childToDelete,
+    (unmountFiber) => {
+      switch (unmountFiber.tag) {
+        case HostComponent:
+          if (hostSubtreeRoot === null) {
+            // 不在任何 host 子树内 → 这是新的顶层 host
+            hostSubtreeRoot = unmountFiber;
+            rootChildrenToDelete.push(unmountFiber);
+          }
+          // 解绑 ref（无论是否顶层）
+          safelyDetachRef(unmountFiber);
+          return;
+        case HostText:
+          if (hostSubtreeRoot === null) {
+            hostSubtreeRoot = unmountFiber;
+            rootChildrenToDelete.push(unmountFiber);
+          }
+          return;
+        case FunctionComponent:
+          // useEffect unmount
+          commitPassiveEffect(unmountFiber, root, 'unmount');
+          return;
+        default:
+          if (__DEV__) {
+            console.warn('未处理的 unmount 类型', unmountFiber);
+          }
+          break;
+      }
+    },
+    (leaveFiber) => {
+      // 向上回溯离开一个 fiber 时：如果离开的就是当前 hostSubtreeRoot，清空标记
+      if (leaveFiber === hostSubtreeRoot) {
+        hostSubtreeRoot = null;
+      }
     }
-  });
+  );
 
   // 移除 rootHostComponent 的 DOM
   if (rootChildrenToDelete.length) {
@@ -360,14 +330,17 @@ function commitDeletion(childToDelete: FiberNode, root: FiberRootNode) {
 }
 
 /**
- * commit 删除操作
+ * 深度优先遍历子树
+ *
+ * @param root - 子树根节点
+ * @param onEnter - 进入节点时的回调（首次访问该节点）
+ * @param onLeave - 离开节点时的回调（该节点的整棵子树已遍历完毕）
  */
-function commitNestedComponent(root: FiberNode, onCommitUnmount: (fiber: FiberNode) => void) {
-  // 递归子树
+function commitNestedComponent(root: FiberNode, onEnter: (fiber: FiberNode) => void, onLeave?: (fiber: FiberNode) => void) {
   let node = root;
 
   while (true) {
-    onCommitUnmount(node);
+    onEnter(node);
 
     if (node.child !== null) {
       node.child.return = node;
@@ -375,16 +348,24 @@ function commitNestedComponent(root: FiberNode, onCommitUnmount: (fiber: FiberNo
       continue;
     }
 
+    // 走到这里说明 node 是叶子或子树已遍历完
+    // 注意：到达叶子时，onLeave(叶子) 等价于"离开叶子"
+    onLeave?.(node);
+
     if (node === root) {
       return;
     }
 
     while (node.sibling === null) {
       if (node.return === null || node.return === root) {
+        // 即将退出整棵子树前，如果 root 自身也需要 leave 通知，可以在这里补
+        // 不过本场景下根节点的 onLeave 已经在循环顶部处理过了，无需重复
         return;
       }
 
       node = node.return;
+      // 上爬到一个父节点，意味着该父节点的整棵子树已遍历完
+      onLeave?.(node);
     }
 
     // 向上一层之后要立马切换到对应的 sibling，防止重复处理
@@ -503,11 +484,11 @@ function insertOrAppendPlacementNodeIntoContainer(finishedWork: FiberNode, hostP
 
   const child = finishedWork.child;
   if (child !== null) {
-    insertOrAppendPlacementNodeIntoContainer(child, hostParent);
+    insertOrAppendPlacementNodeIntoContainer(child, hostParent, before);
     let sibling = child.sibling;
 
     while (sibling !== null) {
-      insertOrAppendPlacementNodeIntoContainer(sibling, hostParent);
+      insertOrAppendPlacementNodeIntoContainer(sibling, hostParent, before);
       sibling = sibling.sibling;
     }
   }

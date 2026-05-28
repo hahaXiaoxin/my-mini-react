@@ -71,7 +71,6 @@ function prepareFreshStack(root: FiberRootNode, lane: Lane) {
 
 /** 在 Fiber 中进行调度更新 */
 export function scheduleUpdateOnFiber(fiber: FiberNode, lane: Lane) {
-  // TODO 调度功能
   const root = markUpdateLaneFromFiberToRoot(fiber, lane);
   markRootUpdated(root, lane);
   ensureRootIsScheduled(root);
@@ -154,6 +153,11 @@ function markUpdateLaneFromFiberToRoot(fiber: FiberNode, lane: Lane) {
   return null;
 }
 
+/**
+ *
+ * @param root 根节点
+ * @param didTimeout 表示当前调度的优先级是否因超时而执行的
+ */
 function performConcurrentWorkOnRoot(root: FiberRootNode, didTimeout?: boolean): any {
   // 保证 useEffect 都已经执行了
   const curCallbackNode = root.callbackNode;
@@ -256,7 +260,7 @@ function renderRoot(root: FiberRootNode, lane: Lane, shouldTimeSlice: boolean) {
   }
 
   if (wipRootRenderLane !== lane) {
-    // 初始化
+    // 初始化，表示从头开始
     prepareFreshStack(root, lane);
   }
 
@@ -286,7 +290,7 @@ function renderRoot(root: FiberRootNode, lane: Lane, shouldTimeSlice: boolean) {
   } while (true);
 
   if (wipRootExitStatus !== RootInProgress) {
-    return wipRootExitStatus;
+    return wipRootExitStatus; // Suspense 等异常路径设置的，先跳过
   }
 
   // 中断执行 || render 阶段执行完

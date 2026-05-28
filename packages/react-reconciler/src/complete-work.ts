@@ -31,7 +31,6 @@ export const completeWork = (wip: FiberNode) => {
     case HostComponent:
       // 1. 构建 DOM
       if (current !== null && wip.stateNode) {
-        // TODO update
         // update
         // props 是否发生变化
         // className style

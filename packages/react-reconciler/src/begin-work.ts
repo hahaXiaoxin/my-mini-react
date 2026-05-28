@@ -77,7 +77,7 @@ export const beginWork = (wip: FiberNode, renderLane: Lane) => {
     case HostText:
       return null;
     case HostComponent:
-      return updateHostComponent(wip, renderLane);
+      return updateHostComponent(wip);
     case FunctionComponent:
       return updateFunctionComponent(wip, wip.type, renderLane);
     case Fragment:
@@ -362,7 +362,7 @@ function updateHostRoot(wip: FiberNode, renderLane: Lane) {
   return wip.child;
 }
 
-function updateHostComponent(wip: FiberNode, renderLane: Lane) {
+function updateHostComponent(wip: FiberNode) {
   const nextProps = wip.pendingProps;
   markRef(wip.alternate, wip);
   reconcileChildren(wip, nextProps.children);

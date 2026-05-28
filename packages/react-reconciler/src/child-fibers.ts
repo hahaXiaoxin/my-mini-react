@@ -63,7 +63,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 
         break;
       }
-      // key 不相同则删掉当前节点，遍历在一个
+      // key 不相同则删掉当前节点，遍历下一个
       deleteChild(returnFiber, currentFiber);
       currentFiber = currentFiber.sibling;
     }
@@ -104,7 +104,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 
   /** 加上 placement 标记 */
   function placeSingleChild(fiber: FiberNode) {
-    // 只有在首屏渲染并且 shouldTrackEffects 为 true 时，才设置 Placement 标志
+    // 只有在该节点首次渲染并且 shouldTrackEffects 为 true 时，才设置 Placement 标志
     if (shouldTrackEffects && fiber.alternate === null) {
       fiber.flags |= Placement;
     }
